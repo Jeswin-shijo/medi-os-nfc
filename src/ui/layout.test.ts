@@ -93,3 +93,13 @@ test('the header clock drops the date under 900 dp, so the hospital name keeps i
   assert.equal(headerTimeOnly(layoutFor(640, 1024)), true);
   assert.equal(headerTimeOnly(layoutFor(427, 952)), true);
 });
+
+test('a small tablet upright (under 700 dp of content) drops a department and a doctor column', () => {
+  const small = layoutFor(640, 1024);
+  assert.equal(small.columns('department'), 2);
+  assert.equal(small.columns('doctor'), 1);
+  assert.equal(small.columns('tiles'), 2);
+  // A tablet upright at 800 keeps three and two.
+  assert.equal(layoutFor(800, 1280).columns('department'), 3);
+  assert.equal(layoutFor(800, 1280).columns('doctor'), 2);
+});

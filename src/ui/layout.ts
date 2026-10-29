@@ -30,6 +30,8 @@ export const MEDIUM_MIN_WIDTH = 600;
 export const EXPANDED_MIN_WIDTH = 1000;
 /** Windows this wide get one more column in the department and doctor grids. */
 export const WIDE_MIN_WIDTH = 1600;
+/** Medium windows with less content width than this drop a department and a doctor column. */
+export const NARROW_MEDIUM_CONTENT = 700;
 /** Windows under this height count as short. */
 export const SHORT_MAX_HEIGHT = 600;
 
@@ -89,8 +91,12 @@ export function layoutFor(width: number, height: number): Layout {
     type: TYPE[size],
     columns(kind) {
       const base = COLUMNS[kind][index];
+      if (kind === 'tiles') return base;
       // Department 3 -> 4 and doctor 2 -> 3 on the big tablet.
-      return size === 'expanded' && width >= WIDE_MIN_WIDTH && kind !== 'tiles' ? base + 1 : base;
+      if (size === 'expanded' && width >= WIDE_MIN_WIDTH) return base + 1;
+      // A small tablet upright: "Orthopedics" broke mid-word in three columns and doctor names were cut in two.
+      if (size === 'medium' && width - 2 * GUTTER.medium < NARROW_MEDIUM_CONTENT) return base - 1;
+      return base;
     },
   };
 }
