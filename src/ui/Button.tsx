@@ -70,8 +70,8 @@ export function Button({
       ]}
     >
       {iconPosition === 'start' ? iconNode : null}
-      {/* One line always: a long label on a phone shrinks a little rather than being cut short. */}
-      <Text style={[styles.label, large && styles.labelLarge, { color: textColor }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+      {/* A long label on a phone takes a second line rather than being cut short (adjustsFontSizeToFit stayed tiny after a rotation). */}
+      <Text style={[styles.label, large && styles.labelLarge, { color: textColor }]} numberOfLines={2}>
         {label}
       </Text>
       {iconPosition === 'end' ? iconNode : null}
@@ -85,6 +85,6 @@ const styles = StyleSheet.create({
   large: { minHeight: sizes.buttonLarge, paddingHorizontal: 40, borderRadius: radii.lg - 4 },
   disabled: { backgroundColor: colors.surfaceSunken, borderColor: colors.border, boxShadow: 'none' },
   disabledQuiet: { backgroundColor: 'transparent' },
-  label: { ...typography.button, flexShrink: 1 },
+  label: { ...typography.button, flexShrink: 1, textAlign: 'center' },
   labelLarge: { fontSize: 24, lineHeight: 30 },
 });
