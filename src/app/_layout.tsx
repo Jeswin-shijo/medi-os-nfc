@@ -47,7 +47,7 @@ export default function RootLayout() {
       <InactivityGuard>
         <KioskShell>
           {/* Forward steps slide in from the right; Start over (and reduced motion) fades. */}
-          {/* The welcome screen needs a configured kiosk; without one, navigation falls back to /setup. */}
+          {/* The patient screens need a configured kiosk; without one (or when its key is removed mid-flow), navigation falls back to /setup. */}
           <Stack
             screenOptions={{
               headerShown: false,
@@ -57,6 +57,8 @@ export default function RootLayout() {
           >
             <Stack.Protected guard={status === 'ready' || status === 'offline'}>
               <Stack.Screen name="index" />
+              <Stack.Screen name="patient" />
+              <Stack.Screen name="has-token" />
             </Stack.Protected>
             <Stack.Screen name="setup" />
           </Stack>

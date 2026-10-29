@@ -6,6 +6,7 @@ import { PressableScale } from '../motion/Pressable';
 import { withAlpha } from '../theme/color';
 import { colors, motion, radii, shadows, typography } from '../theme/tokens';
 import type { IconName } from './Button';
+import { LiveDot } from './LiveDot';
 
 interface BigTileProps {
   title: string;
@@ -24,6 +25,10 @@ interface BigTileProps {
   disabled?: boolean;
   /** A short tag in the corner, e.g. 'Fastest'. */
   badge?: string;
+  /** The tag carries a pulsing dot: this choice is live (the card reader is listening). */
+  badgeLive?: boolean;
+  /** Stop looping animations while the screen is covered by another one. */
+  paused?: boolean;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
@@ -41,6 +46,8 @@ export function BigTile({
   selected = false,
   disabled = false,
   badge,
+  badgeLive = false,
+  paused = false,
   onPress,
   style,
   accessibilityLabel,
@@ -86,6 +93,7 @@ export function BigTile({
         {row ? <MaterialCommunityIcons name="chevron-right" size={36} color={filled ? ink : colors.textTertiary} /> : null}
         {badge ? (
           <View style={[styles.badge, { backgroundColor: filled ? 'rgba(255, 255, 255, 0.22)' : withAlpha(color, 0.12) }]}>
+            {badgeLive ? <LiveDot color={filled ? colors.textOnColor : color} size={8} paused={paused} /> : null}
             <Text style={[styles.badgeText, { color: filled ? colors.textOnColor : color }]}>{badge}</Text>
           </View>
         ) : null}
@@ -122,6 +130,16 @@ const styles = StyleSheet.create({
   subtitle: { ...typography.caption, fontFamily: typography.body.fontFamily, fontSize: 18, lineHeight: 24 },
   centred: { textAlign: 'center' },
   iconBadge: { borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', top: 14, right: 14, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 4 },
+  badge: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
   badgeText: { ...typography.small, fontFamily: typography.label.fontFamily },
 });
