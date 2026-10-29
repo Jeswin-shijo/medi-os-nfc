@@ -10,6 +10,7 @@ import {
   savePrinterSettings,
   type StoredKioskConfig,
 } from '../config/kioskConfigStore';
+import { serverSkewMs } from '../flow/visitPolling';
 import { strings } from '../i18n/strings';
 
 type Status = 'loading' | 'unconfigured' | 'offline' | 'ready';
@@ -17,6 +18,8 @@ type Status = 'loading' | 'unconfigured' | 'offline' | 'ready';
 interface KioskAppState {
   status: Status;
   config: KioskConfig | null;
+  /** Server clock minus this tablet's clock (ms), taken when the configuration arrived: for payment countdowns. */
+  serverSkewMs: number;
   client: KioskClient | null;
   api: KioskApi | null;
   /** Shown on the setup screen (for example after the key was revoked). */
@@ -55,12 +58,13 @@ export const useKioskApp = create<KioskAppState>((set, get) => {
     const client = watchedClient(settings);
     const api = kioskApi(client);
     const config = await api.config();
-    set({ status: 'ready', config, client, api, notice: null, loadError: null, address: settings.apiUrl });
+    set({ status: 'ready', config, serverSkewMs: serverSkewMs(config.clinic.serverTime, Date.now()), client, api, notice: null, loadError: null, address: settings.apiUrl });
   }
 
   return {
     status: 'loading',
     config: null,
+    serverSkewMs: 0,
     client: null,
     api: null,
     notice: null,
@@ -88,7 +92,7 @@ export const useKioskApp = create<KioskAppState>((set, get) => {
       await saveKioskConfig(settings);
       if (printer) await savePrinterSettings({ transport: 'network', host: printer.host, port: printer.port });
       const client = watchedClient(settings);
-      set({ status: 'ready', config, client, api: kioskApi(client), notice: null, loadError: null, address: settings.apiUrl });
+      set({ status: 'ready', config, serverSkewMs: serverSkewMs(config.clinic.serverTime, Date.now()), client, api: kioskApi(client), notice: null, loadError: null, address: settings.apiUrl });
     },
   };
 });

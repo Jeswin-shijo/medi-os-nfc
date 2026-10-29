@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { usePayWaiting } from '../../flow/usePayWaiting';
 import { useFlow } from '../../flow/useFlow';
-import { MAX_WAIT_SECONDS, secondsLeft } from '../../flow/visitPolling';
+import { MAX_WAIT_SECONDS, payScreenGuard, secondsLeft } from '../../flow/visitPolling';
 import { strings } from '../../i18n/strings';
 import { Enter } from '../../motion/Enter';
 import { colors, fonts, methodColors, radii, shadows, sizes, spacing, typography } from '../../theme/tokens';
@@ -24,18 +24,19 @@ const RING_STROKE = 12;
 /** Step 6, UPI: the QR inside a ring that empties as the order runs out. The server decides when it is paid. */
 export default function PayUpi() {
   const visit = useFlow((s) => s.visit);
-  if (!visit || visit.method !== 'UPI' || !visit.upiUri || visit.status !== 'awaiting-payment') {
-    return <Redirect href={visit ? '/payment' : '/'} />;
-  }
+  // Only a missing or mismatched visit leaves; paid and closed outcomes belong to the screen below.
+  const guard = payScreenGuard(visit, 'UPI');
+  if (!visit || guard !== 'stay') return <Redirect href={guard === 'to-payment' ? '/payment' : '/'} />;
   return <UpiScreen key={visit.expiresAt} visitId={visit.id} upiUri={visit.upiUri} expiresAt={visit.expiresAt} fee={visit.fee} />;
 }
 
-function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUri: string; expiresAt: string; fee: number }) {
+function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUri?: string; expiresAt: string; fee: number }) {
   const { height } = useWindowDimensions();
+  const skewMs = useKioskApp((s) => s.serverSkewMs);
   const sample = useKioskApp((s) => s.config?.sample.payments === true);
   const { closed, reconnecting, simulating, simulateFailed, simulate, chooseAnother } = usePayWaiting(visitId);
   // Fixed per order (the screen is keyed by it): a new value would restart the ring.
-  const [seconds] = useState(() => secondsLeft(expiresAt, Date.now(), MAX_WAIT_SECONDS.UPI));
+  const [seconds] = useState(() => secondsLeft(expiresAt, Date.now() + skewMs, MAX_WAIT_SECONDS.UPI));
   const left = useCountdown(seconds);
 
   if (closed) return <ClosedPanel status={closed.status} />;
@@ -49,7 +50,7 @@ function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUr
     <View style={styles.screen}>
       <Enter style={styles.ringSlot}>
         <RingCountdown seconds={seconds} total={MAX_WAIT_SECONDS.UPI} size={ring} strokeWidth={RING_STROKE} color={methodColors.UPI} trackColor="#D7F2E5">
-          <QrView value={upiUri} size={qr} accessibilityLabel={strings.upi.qrLabel(fee)} />
+          {upiUri ? <QrView value={upiUri} size={qr} accessibilityLabel={strings.upi.qrLabel(fee)} /> : null}
         </RingCountdown>
       </Enter>
 

@@ -79,3 +79,23 @@ export function tokenWaitState(visit: VisitLike, startedAtMs: number, nowMs: num
 
 /** 'upi' | 'cash' | 'card' for the route of a method. */
 export const methodSlug = (method: PaymentMethod): 'upi' | 'cash' | 'card' => method.toLowerCase() as 'upi' | 'cash' | 'card';
+
+/** How far the server's clock is ahead of this tablet's (ms), read when the kiosk configuration arrives. 0 if unreadable. */
+export function serverSkewMs(serverTime: string, deviceNowMs: number): number {
+  const server = Date.parse(serverTime);
+  return Number.isNaN(server) ? 0 : server - deviceNowMs;
+}
+
+/** What a payment screen does with the visit in the flow. Paid and closed visits stay: the screen itself handles those outcomes. */
+export type PayGuard = 'stay' | 'to-welcome' | 'to-payment';
+
+export function payScreenGuard(visit: { method?: PaymentMethod; status: VisitStatus; upiUri?: string; paymentCode?: string } | undefined, method: PaymentMethod): PayGuard {
+  if (!visit) return 'to-welcome';
+  if (visit.method !== method) return 'to-payment';
+  // While still awaiting payment the screen needs its order (the QR, the code); after paid or closed it does not.
+  if (visit.status === 'awaiting-payment') {
+    if (method === 'UPI' && !visit.upiUri) return 'to-payment';
+    if (method === 'CASH' && !visit.paymentCode) return 'to-payment';
+  }
+  return 'stay';
+}

@@ -6,6 +6,7 @@ import type { VisitView } from '../../api/types';
 import { goPaid } from '../../flow/usePayWaiting';
 import { useFlow } from '../../flow/useFlow';
 import { useVisitPolling } from '../../flow/useVisitPolling';
+import { payScreenGuard } from '../../flow/visitPolling';
 import { strings } from '../../i18n/strings';
 import { Enter } from '../../motion/Enter';
 import { colors, fonts, methodColors, radii, shadows, sizes, spacing, typography } from '../../theme/tokens';
@@ -20,10 +21,10 @@ const BLUE = methodColors.CASH;
 /** Step 6, cash: show the code at the counter. The visit stays open when the patient leaves this screen. */
 export default function PayCash() {
   const visit = useFlow((s) => s.visit);
-  if (!visit || visit.method !== 'CASH' || !visit.paymentCode || visit.status !== 'awaiting-payment') {
-    return <Redirect href={visit ? '/payment' : '/'} />;
-  }
-  return <CashScreen visitId={visit.id} code={visit.paymentCode} fee={visit.fee} />;
+  // Only a missing or mismatched visit leaves; paid and closed outcomes belong to the screen below.
+  const guard = payScreenGuard(visit, 'CASH');
+  if (!visit || guard !== 'stay') return <Redirect href={guard === 'to-payment' ? '/payment' : '/'} />;
+  return <CashScreen visitId={visit.id} code={visit.paymentCode ?? ''} fee={visit.fee} />;
 }
 
 function CashScreen({ visitId, code, fee }: { visitId: string; code: string; fee: number }) {

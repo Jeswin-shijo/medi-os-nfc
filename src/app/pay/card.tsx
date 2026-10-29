@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { usePayWaiting } from '../../flow/usePayWaiting';
 import { useFlow } from '../../flow/useFlow';
+import { payScreenGuard } from '../../flow/visitPolling';
 import { strings } from '../../i18n/strings';
 import { Enter } from '../../motion/Enter';
 import { useKioskApp } from '../../store/useKioskApp';
@@ -21,9 +22,9 @@ const PURPLE = methodColors.CARD;
 /** Step 6, card: the machine does the work; this screen waits for its answer. */
 export default function PayCard() {
   const visit = useFlow((s) => s.visit);
-  if (!visit || visit.method !== 'CARD' || visit.status !== 'awaiting-payment') {
-    return <Redirect href={visit ? '/payment' : '/'} />;
-  }
+  // Only a missing or mismatched visit leaves; paid and closed outcomes belong to the screen below.
+  const guard = payScreenGuard(visit, 'CARD');
+  if (!visit || guard !== 'stay') return <Redirect href={guard === 'to-payment' ? '/payment' : '/'} />;
   return <CardScreen visitId={visit.id} fee={visit.fee} />;
 }
 
