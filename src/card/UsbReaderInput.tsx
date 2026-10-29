@@ -30,9 +30,10 @@ export function UsbReaderInput({ onCard }: UsbReaderInputProps) {
   }, [onCard]);
 
   useEffect(() => {
-    // Back from the background (a system dialog, the screen waking up): listen again.
+    // Listen from the start, and again when back from the background (a system dialog, the screen waking up).
+    focusUnlessTaken(ref.current);
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') ref.current?.focus();
+      if (state === 'active') focusUnlessTaken(ref.current);
     });
     return () => {
       sub.remove();
@@ -71,17 +72,12 @@ export function UsbReaderInput({ onCard }: UsbReaderInputProps) {
 
   const onBlur = () => {
     clearTimeout(refocusTimer.current);
-    refocusTimer.current = setTimeout(() => {
-      // A real text field has the focus now (staff typing a search): leave it there.
-      if (TextInput.State.currentlyFocusedInput()) return;
-      ref.current?.focus();
-    }, REFOCUS_DELAY_MS);
+    refocusTimer.current = setTimeout(() => focusUnlessTaken(ref.current), REFOCUS_DELAY_MS);
   };
 
   return (
     <TextInput
       ref={ref}
-      autoFocus
       showSoftInputOnFocus={false}
       caretHidden
       contextMenuHidden
@@ -101,6 +97,12 @@ export function UsbReaderInput({ onCard }: UsbReaderInputProps) {
       style={styles.hidden}
     />
   );
+}
+
+/** Takes the focus for the reader, but never from a real text field (a search box staff are typing in). */
+function focusUnlessTaken(input: TextInput | null): void {
+  if (!input || TextInput.State.currentlyFocusedInput()) return;
+  input.focus();
 }
 
 const styles = StyleSheet.create({

@@ -92,6 +92,16 @@ describe('UsbReaderBuffer', () => {
   it('trims spaces and upper-cases hex letters', () => {
     assert.equal(new UsbReaderBuffer().push(' 04a1b2c3 \n', 1000), '04A1B2C3');
   });
+
+  it('accepts only hex or decimal ids, nothing else a keyboard could type', () => {
+    const buffer = new UsbReaderBuffer();
+    assert.equal(buffer.push('HELLO123\n', 1000), null);
+    assert.equal(buffer.push('04:A1:B2:C3\n', 2000), null);
+    assert.equal(buffer.push('0004567890\n', 3000), '0004567890');
+    assert.equal(buffer.push('abcdef12\n', 4000), 'ABCDEF12');
+    buffer.push('ZZZZ9999', 5000);
+    assert.equal(buffer.push('', 5200), null, 'not by silence either');
+  });
 });
 
 describe('RepeatGuard', () => {

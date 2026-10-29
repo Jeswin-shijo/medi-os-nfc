@@ -62,6 +62,7 @@ export default function Welcome() {
   const hintTimer = useRef<Timer>(undefined);
   const leaveTimer = useRef<Timer>(undefined);
   const shownBefore = useRef(false);
+  const inFlight = useRef(false);
 
   useEffect(
     () => () => {
@@ -95,7 +96,10 @@ export default function Welcome() {
 
   const identify = useCallback(
     async (cardId: string) => {
-      if (!api) return;
+      // One lookup at a time: two cards (or NFC and USB) in the same moment, before the screen
+      // stops listening, must not both identify and navigate.
+      if (!api || inFlight.current) return;
+      inFlight.current = true;
       clearTimeout(hintTimer.current);
       setHint(false);
       setNotice(null);
@@ -105,6 +109,7 @@ export default function Welcome() {
         useFlow.getState().setIdentity(result, 'card');
         setPhase('found');
         feedback.success();
+        clearTimeout(leaveTimer.current);
         leaveTimer.current = setTimeout(() => router.push(result.activeToken ? '/has-token' : '/patient'), BURST_MS);
       } catch (err) {
         // A removed kiosk key has already sent the kiosk to its setup screen.
@@ -116,6 +121,8 @@ export default function Welcome() {
         const unknownWithoutFind = err instanceof KioskApiError && err.code === 'CARD_UNKNOWN' && !findByPhone;
         const serverMessage = err instanceof Error && err.message ? err.message : strings.errors.generic;
         showNotice(unknownWithoutFind ? strings.welcome.card.unknownAskCounter : serverMessage);
+      } finally {
+        inFlight.current = false;
       }
     },
     [api, findByPhone, shake, showNotice],

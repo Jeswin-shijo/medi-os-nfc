@@ -4,8 +4,8 @@
 const SILENCE_MS = 120;
 /** Card readers type a whole id in a few ms; a gap longer than this between keys is a person typing. */
 const MAX_KEY_GAP_MS = 80;
-/** Shorter bursts are stray keys, not a card. */
-const MIN_LENGTH = 4;
+/** What a reader types: 4 or more hex digits (decimal ids are hex digits too). Anything else is not a card. */
+const READER_ID = /^[0-9A-Fa-f]{4,}$/;
 
 const SEPARATORS = /[\s:-]/g;
 const HEX = /^[0-9A-F]+$/;
@@ -30,7 +30,7 @@ export function tagIdToCardId(id: string | number[] | undefined): string | null 
  * or several) with the time it arrived and returns the id when a burst completes: at Enter or a
  * newline, or, for readers that send no Enter, on the first push (an empty one is a plain time
  * check) after 120 ms of silence. Bursts with a gap of more than 80 ms between keys look typed by
- * hand and are dropped, as is anything shorter than 4 characters.
+ * hand and are dropped, as is anything but 4 or more hex digits.
  */
 export class UsbReaderBuffer {
   private chars = '';
@@ -58,13 +58,13 @@ export class UsbReaderBuffer {
     return completed;
   }
 
-  /** Ends the current burst: its id, or null when it was too short or typed by hand. */
+  /** Ends the current burst: its id, or null when it was typed by hand or is not a reader id. */
   private finish(): string | null {
-    const id = this.chars.trim().toUpperCase();
-    const valid = !this.byHand && id.length >= MIN_LENGTH;
+    const id = this.chars.trim();
+    const valid = !this.byHand && READER_ID.test(id);
     this.chars = '';
     this.byHand = false;
-    return valid ? id : null;
+    return valid ? id.toUpperCase() : null;
   }
 }
 
