@@ -32,8 +32,9 @@ describe('idleLimitSeconds', () => {
     assert.equal(idleLimitSeconds('/pay/cash', cfg), 180);
   });
 
-  it('gives 30 seconds on the ticket screen', () => {
-    assert.equal(idleLimitSeconds('/ticket', cfg), 30);
+  it('never asks on the ticket screen: its own 30 s ring goes back to Welcome, exactly once', () => {
+    assert.equal(idleLimitSeconds('/ticket', cfg), null);
+    assert.equal(idleLimitSeconds('/ticket/', cfg), null);
   });
 
   it("uses the kiosk's own limit on every other step", () => {

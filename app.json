@@ -33,7 +33,8 @@
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      "./modules/medios-printer/app.plugin.js"
     ]
   }
 }

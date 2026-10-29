@@ -6,16 +6,15 @@ export const WARNING_SECONDS = 10;
 
 /**
  * Seconds without a touch before "Are you still there?" appears, or null where the kiosk never
- * times out: the welcome screen (nothing to reset), setup, the staff menu (it signs out on its own)
- * and the developer gallery.
+ * asks: the welcome screen (nothing to reset), setup, the staff menu (it signs out on its own),
+ * the developer gallery, and the ticket (its own 30 s ring goes back to Welcome; nothing is lost).
  */
 export function idleLimitSeconds(route: string, cfg: { idleSeconds: number }): number | null {
   const r = normalizeRoute(route);
-  if (r === '/' || r === '/setup' || isUnder(r, '/staff') || isUnder(r, '/_dev')) return null;
+  if (r === '/' || r === '/setup' || r === '/ticket' || isUnder(r, '/staff') || isUnder(r, '/_dev')) return null;
   // Paying takes a while (finding the phone, walking to the counter).
   if (r === '/pay/upi' || r === '/pay/card') return 300;
   if (r === '/pay/cash') return 180;
-  if (r === '/ticket') return 30;
   return cfg.idleSeconds;
 }
 

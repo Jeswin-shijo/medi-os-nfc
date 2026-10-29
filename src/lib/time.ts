@@ -24,6 +24,24 @@ export function clinicClock(clinic: KioskConfig['clinic'], deviceNow: number = D
   };
 }
 
+const pad = (n: number): string => String(n).padStart(2, '0');
+
+/**
+ * '26 Sep 2026, 10:24 AM', as the backend writes a visit's payment time: the moment's time of day
+ * on the clinic's wall clock, on the clinic day (like the header clock). Empty if `iso` is unreadable.
+ */
+export function formatSlipTime(iso: string, clinic: { date: string; utcOffsetMinutes: number }): string {
+  const moment = Date.parse(iso);
+  if (Number.isNaN(moment)) return '';
+  const local = new Date(moment + clinic.utcOffsetMinutes * MINUTE);
+  const pinned = /^(\d{4})-(\d{2})-(\d{2})$/.exec(clinic.date);
+  const [year, month, day] = pinned
+    ? [Number(pinned[1]), Number(pinned[2]) - 1, Number(pinned[3])]
+    : [local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()];
+  const hours = local.getUTCHours();
+  return `${pad(day)} ${MONTHS[month]} ${year}, ${pad(hours % 12 || 12)}:${pad(local.getUTCMinutes())} ${hours < 12 ? 'AM' : 'PM'}`;
+}
+
 /** 'Sat, 26 Sep 2026  10:24 AM' on the clinic's wall clock, without `Intl`. */
 export function formatHeaderTime(d: Date, utcOffsetMinutes: number): string {
   const local = new Date(d.getTime() + utcOffsetMinutes * MINUTE);

@@ -70,6 +70,7 @@ export default function RootLayout() {
               <Stack.Screen name="pay/cash" />
               <Stack.Screen name="pay/card" />
               <Stack.Screen name="paid" />
+              <Stack.Screen name="ticket" />
             </Stack.Protected>
             <Stack.Screen name="setup" />
           </Stack>

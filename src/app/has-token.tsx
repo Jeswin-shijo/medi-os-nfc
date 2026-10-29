@@ -1,42 +1,32 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect } from 'expo-router';
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import type { KioskTokenView } from '../api/types';
 import { useFlow } from '../flow/useFlow';
 import { strings } from '../i18n/strings';
 import { Enter } from '../motion/Enter';
-import { printSlip } from '../printer/printSlip';
-import { useKioskApp } from '../store/useKioskApp';
+import { MAX_PRINTS, usePrintSlip } from '../printer/printSlip';
 import { colors, fonts, motion, radii, shadows, sizes, spacing, typography } from '../theme/tokens';
 import { Button, type IconName } from '../ui/Button';
 import { RollingNumber } from '../ui/RollingNumber';
 import { StepTitle } from '../ui/StepTitle';
 
-/** One slip and two more at most: paper is not wasted by a patient pressing again and again. */
-const MAX_PRINTS = 3;
 /** The token rolls in once the panel has settled. */
 const ROLL_DELAY_MS = 180;
-
-type PrintState = 'idle' | 'printing' | 'printed' | 'failed';
 
 /** One active token per patient per day: show the one they have, with no payment. */
 export default function HasToken() {
   const token = useFlow((s) => s.activeToken);
   const patient = useFlow((s) => s.patient);
-  const canPrint = useKioskApp((s) => s.config?.printSlips !== false);
-  const [printState, setPrintState] = useState<PrintState>('idle');
-  const [prints, setPrints] = useState(0);
+  const slip = useMemo(() => (token ? { token, patient } : null), [token, patient]);
+  // Printed only when asked (Print slip); the button shows only where a printer is set up.
+  const printer = usePrintSlip(slip);
+  const printState = printer.status;
+  const showPrint = printState === 'idle' || printState === 'printing' || printState === 'printed' || printState === 'failed';
 
   if (!token) return <Redirect href="/" />;
-
-  const print = async () => {
-    setPrintState('printing');
-    setPrints((n) => n + 1);
-    const result = await printSlip({ token, patient });
-    setPrintState(result.ok ? 'printed' : 'failed');
-  };
 
   const facts: { label: string; value: string }[] = [];
   if (token.doctorName) facts.push({ label: strings.hasToken.doctor, value: token.doctorName });
@@ -72,15 +62,15 @@ export default function HasToken() {
         <View style={styles.printNote}>
           {printState === 'printed' || printState === 'failed' ? <PrintNote state={printState} /> : null}
         </View>
-        {canPrint ? (
+        {showPrint ? (
           <Button
-            label={prints > 0 ? strings.hasToken.printAgain : strings.hasToken.print}
+            label={printer.used > 0 ? strings.hasToken.printAgain : strings.hasToken.print}
             variant="secondary"
             size="large"
             icon="printer-outline"
             loading={printState === 'printing'}
-            disabled={prints >= MAX_PRINTS}
-            onPress={() => void print()}
+            disabled={printer.used >= MAX_PRINTS}
+            onPress={printer.print}
           />
         ) : null}
         <Button
