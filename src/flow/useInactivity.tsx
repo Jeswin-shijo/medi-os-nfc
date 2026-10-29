@@ -76,7 +76,9 @@ export function InactivityGuard({ children }: { children: ReactNode }) {
 /** The "Are you still there?" dialog: a ring counting down 10 s. A touch anywhere keeps the patient's place. */
 export function StillThere({ onStay, onStartOver }: { onStay: () => void; onStartOver: () => void }) {
   const reduced = useReducedMotion();
-  const { width, gutter, short, type } = useLayout();
+  const { width, gutter, short, type, size } = useLayout();
+  // On a phone upright the card is too narrow for two buttons side by side: they stack, "I'm still here" on top.
+  const stacked = size === 'compact';
   const left = useCountdown(WARNING_SECONDS, onStartOver);
   const card = reduced
     ? FadeIn.duration(motion.duration.base).reduceMotion(ReduceMotion.Never)
@@ -107,9 +109,9 @@ export function StillThere({ onStay, onStartOver }: { onStay: () => void; onStar
           <Text style={[styles.title, { fontSize: type.title, lineHeight: Math.round(type.title * 1.25) }]}>{strings.idle.title}</Text>
           <Text style={[styles.body, { fontSize: type.body, lineHeight: Math.round(type.body * 1.4) }]}>{strings.idle.body}</Text>
         </View>
-        <View style={styles.actions}>
-          <Button label={strings.idle.startOver} variant="secondary" icon="restart" onPress={onStartOver} style={styles.action} />
-          <Button label={strings.idle.stay} icon="hand-wave-outline" onPress={onStay} style={styles.action} />
+        <View style={stacked ? styles.actionsStacked : styles.actions}>
+          <Button label={strings.idle.startOver} variant="secondary" icon="restart" onPress={onStartOver} style={stacked ? undefined : styles.action} />
+          <Button label={strings.idle.stay} icon="hand-wave-outline" onPress={onStay} style={stacked ? undefined : styles.action} />
         </View>
       </Animated.View>
     </Animated.View>
@@ -130,5 +132,6 @@ const styles = StyleSheet.create({
   title: { ...typography.title, color: colors.textPrimary, textAlign: 'center' },
   body: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
   actions: { flexDirection: 'row', gap: 16, alignSelf: 'stretch' },
+  actionsStacked: { flexDirection: 'column-reverse', gap: 12, alignSelf: 'stretch' },
   action: { flex: 1 },
 });
