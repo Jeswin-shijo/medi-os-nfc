@@ -41,18 +41,18 @@ function CashScreen({ visitId, code, fee }: { visitId: string; code: string; fee
   if (closed) return <ClosedPanel status={closed.status} />;
 
   const compact = layout.size === 'compact';
-  const code_ = cashSizes(layout, code.length || 6);
+  const sizes = cashSizes(layout, code.length || 6);
   const copy = copyType(layout);
   return (
     <Screen style={layout.size === 'expanded' ? styles.tabletGap : undefined}>
-      <Enter style={[styles.card, { padding: code_.cardPadding }, layout.short && styles.cardShort]}>
+      <Enter style={[styles.card, { padding: sizes.cardPadding }, layout.short && styles.cardShort]}>
         <Text style={[styles.title, heroType(layout)]} accessibilityRole="header">
           {strings.cash.title(fee)}
         </Text>
 
-        <View style={[styles.codeBox, { paddingHorizontal: code_.codePaddingX }, compact && styles.codeBoxCompact]} accessible accessibilityLabel={strings.cash.codeLabel(code)}>
+        <View style={[styles.codeBox, { paddingHorizontal: sizes.codePaddingX }, compact && styles.codeBoxCompact]} accessible accessibilityLabel={strings.cash.codeLabel(code)}>
           <Text style={styles.codeCaption}>{strings.cash.showCode}</Text>
-          <RollingNumber value={code} style={[styles.code, { fontSize: code_.codeFont, lineHeight: code_.codeLine, letterSpacing: code_.codeSpacing }]} delay={200} />
+          <RollingNumber value={code} style={[styles.code, { fontSize: sizes.codeFont, lineHeight: sizes.codeLine, letterSpacing: sizes.codeSpacing }]} delay={200} />
         </View>
 
         <View style={styles.go}>

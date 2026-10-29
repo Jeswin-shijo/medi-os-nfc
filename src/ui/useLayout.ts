@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Dimensions, Keyboard, useWindowDimensions } from 'react-native';
+import { AppState, Dimensions, Keyboard, useWindowDimensions } from 'react-native';
 import { layoutFor, type Layout } from './layout';
 import { layoutHeight } from './windowHeight';
 
@@ -9,7 +9,12 @@ function useKeyboardVisible(): boolean {
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => setVisible(true));
     const hide = Keyboard.addListener('keyboardDidHide', () => setVisible(false));
+    // A missed keyboardDidHide must not leave the clamp on: look again whenever the app comes back.
+    const app = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setVisible(Keyboard.isVisible());
+    });
     return () => {
+      app.remove();
       show.remove();
       hide.remove();
     };

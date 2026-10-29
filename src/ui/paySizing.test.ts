@@ -37,9 +37,18 @@ test('the QR keeps 220 to 360 dp and its corners inside the ring', () => {
     const s = upiSizes(l);
     assert.ok(s.qr >= 200, `${w}x${h} qr ${s.qr}`);
     assert.ok(s.qr <= (l.size === 'expanded' ? 450 : 360), `${w}x${h} qr ${s.qr}`);
-    assert.ok(s.qr * Math.SQRT2 <= s.ring - 2 * s.stroke - 8 + 1e-9, `${w}x${h} corners`);
-    if (l.size !== 'expanded') assert.ok(s.ring <= l.width - 2 * l.gutter + 40 || s.qr === 200, `${w}x${h} ring fits`);
+    assert.ok(s.qr * Math.SQRT2 <= s.ring - 2 * s.stroke - 4 + 1e-9, `${w}x${h} corners`);
+    if (l.size !== 'expanded') assert.ok(s.ring <= l.width - 16, `${w}x${h} ring fits`);
   }
+});
+
+test('common phones keep a 220 QR; only windows under 350 dp drop to 200', () => {
+  assert.equal(upiSizes(layoutFor(360, 800)).qr, 220);
+  assert.equal(upiSizes(layoutFor(375, 667)).qr, 220);
+  assert.equal(upiSizes(layoutFor(350, 700)).qr, 220);
+  const small = upiSizes(layoutFor(320, 640));
+  assert.equal(small.qr, 200);
+  assert.ok(small.ring <= 320 - 16);
 });
 
 test('a phone upright stacks the ring above the countdown with a QR of at least 220', () => {

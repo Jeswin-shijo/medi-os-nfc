@@ -31,7 +31,7 @@ export function RollingNumber({ value, style, delay = 0 }: RollingNumberProps) {
 
   if (reduced) {
     return (
-      <Animated.Text key={value} entering={FadeIn.duration(motion.duration.base).reduceMotion(ReduceMotion.Never)} style={textStyle}>
+      <Animated.Text key={value} entering={FadeIn.duration(motion.duration.base).reduceMotion(ReduceMotion.Never)} style={textStyle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
         {value}
       </Animated.Text>
     );

@@ -160,7 +160,7 @@ export default function Payment() {
 
       <View style={[styles.tiles, tiles.fillHeight && styles.tilesFill, { gap: tiles.fillHeight ? spacing.md : gap }]}>
         {enabled.map((m, i) => (
-          <Enter key={m.method} index={i + 2} style={tiles.fillHeight ? styles.tileSlot : { flexGrow: 1, flexBasis: slotWidth }}>
+          <Enter key={m.method} index={i + 2} style={tiles.fillHeight ? styles.tileSlot : { flexGrow: 1, flexBasis: slotWidth, maxWidth: slotWidth }}>
             <BigTile
               filled
               color={methodColors[m.method]}

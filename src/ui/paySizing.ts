@@ -34,7 +34,6 @@ export interface DoctorCardMetrics {
   padding: number;
   feeFont: number;
   feeLine: number;
-  nameLines: number;
 }
 
 /** Doctor card sizes by the card's own width (588 at 1280, 450 on the big tablet: both keep the tablet look). */
@@ -46,7 +45,6 @@ export function doctorCardMetrics(cardWidth: number): DoctorCardMetrics {
     padding: narrow ? 18 : 24,
     feeFont: narrow ? 26 : 30,
     feeLine: narrow ? 32 : 38,
-    nameLines: 2,
   };
 }
 
@@ -88,13 +86,15 @@ export function upiSizes(l: Layout): UpiSizes {
     const ring = Math.round(clamp(l.height - chromeHeight(l), 380, 620));
     return { stacked, ring, stroke, qr: Math.floor((ring - 2 * stroke - 8) / Math.SQRT2) };
   }
-  const stroke = l.size === 'compact' ? 10 : 12;
-  const available = contentWidth(l);
-  const share = stacked ? available : (available - 32) / 2;
-  const widthCap = Math.floor((share - 2 * stroke - 8) / Math.SQRT2);
+  const stroke = l.size === 'compact' ? 8 : 12;
+  // The ring may reach into the gutters when stacked (up to the window minus 8 dp each side), so any window of
+  // 350 dp or more keeps a 220 QR; the corner clearance is 4 dp there.
+  const slack = stacked ? 4 : 8;
+  const share = stacked ? l.width - 16 : (contentWidth(l) - 32) / 2;
+  const widthCap = Math.floor((share - 2 * stroke - slack) / Math.SQRT2);
   const wanted = clamp(Math.round(Math.min(l.width, l.height) / 2), QR_MIN, QR_MAX);
   const qr = Math.max(QR_HARD_MIN, Math.min(wanted, widthCap));
-  return { stacked, ring: Math.ceil(qr * Math.SQRT2) + 2 * stroke + 8, stroke, qr };
+  return { stacked, ring: Math.ceil(qr * Math.SQRT2) + 2 * stroke + slack, stroke, qr };
 }
 
 export interface CashSizes {
