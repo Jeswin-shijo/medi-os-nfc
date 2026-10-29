@@ -1,8 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -27,10 +27,12 @@ import { easeOut } from '../motion/curves';
 import { Enter } from '../motion/Enter';
 import { feedback } from '../motion/feedback';
 import { useKioskApp } from '../store/useKioskApp';
-import { colors, fonts, headerGradient, motion, radii, sizes, spacing, typography } from '../theme/tokens';
+import { colors, fonts, headerGradient, motion, radii, spacing, typography } from '../theme/tokens';
 import { BigTile } from '../ui/BigTile';
 import { Ripple } from '../ui/Ripple';
+import { Screen } from '../ui/Screen';
 import { useShake } from '../ui/Shake';
+import { useLayout } from '../ui/useLayout';
 
 /** idle: listening; reading: asking the server who the card belongs to; found: on the way to the next screen. */
 type Phase = 'idle' | 'reading' | 'found';
@@ -54,7 +56,10 @@ export default function Welcome() {
   const ready = useKioskApp((s) => s.status === 'ready');
   const findByPhone = useKioskApp((s) => s.config?.findByPhone !== false);
   const focused = useIsFocused();
-  const { height } = useWindowDimensions();
+  const layout = useLayout();
+  const compact = layout.size === 'compact';
+  // Tiles sit side by side from 600 dp wide; a phone upright stacks them, the card tile first and full width.
+  const stacked = compact;
   const { style: shakeStyle, shake } = useShake();
   const [phase, setPhase] = useState<Phase>('idle');
   const [notice, setNotice] = useState<string | null>(null);
@@ -163,77 +168,84 @@ export default function Welcome() {
         : hint
           ? strings.welcome.card.hint
           : strings.welcome.card.subtitle;
-  // About a third of the screen's height: 240 dp at 800, capped for the big tablets.
-  const rippleSize = Math.round(Math.min(320, Math.max(200, height * 0.3)));
+  // About a third of the screen's height: 240 dp at 800, capped for the big tablets; smaller on phones.
+  const rippleSize = compact
+    ? Math.round(Math.min(200, layout.width * 0.5))
+    : layout.short
+      ? 150
+      : Math.round(Math.min(320, Math.max(200, layout.height * 0.3)));
+  const titleSize = compact ? 28 : layout.size === 'medium' ? 34 : 40;
 
   return (
     <View style={styles.screen}>
       {cardReader}
-      <View key={round} style={styles.content}>
-        <View style={styles.intro}>
-          <Enter>
-            <Text style={styles.title} accessibilityRole="header" numberOfLines={2}>
-              {strings.welcome.title(config?.hospital.name ?? '')}
-            </Text>
-          </Enter>
-          <Enter index={1}>
-            <Text style={styles.subtitle}>{strings.welcome.subtitle}</Text>
-          </Enter>
-        </View>
-
-        <View style={styles.choices}>
-          <Enter index={2} style={styles.cardColumn}>
-            <Animated.View style={[styles.fill, shakeStyle]}>
-              <BigTile
-                title={strings.welcome.card.title}
-                subtitle={cardLine}
-                badge={strings.welcome.card.badge}
-                badgeLive
-                paused={!focused}
-                selected={busy}
-                onPress={busy ? undefined : showHint}
-                art={<TapCardArt size={rippleSize} burst={phase === 'found'} paused={!focused} />}
-                style={styles.fill}
-              />
-            </Animated.View>
-          </Enter>
-
-          <View style={styles.otherColumn}>
-            <Enter index={3} style={styles.fill}>
-              {!findByPhone ? (
-                <AskAtCounter />
-              ) : (
-                <BigTile
-                  orientation="row"
-                  title={strings.welcome.find.title}
-                  subtitle={strings.welcome.find.subtitle}
-                  icon="cellphone-message"
-                  color={colors.purple}
-                  disabled={busy}
-                  onPress={() => router.push('/find')}
-                  style={styles.fill}
-                />
-              )}
+      <Screen>
+        <Fragment key={round}>
+          <View style={styles.intro}>
+            <Enter>
+              <Text style={[styles.title, { fontSize: titleSize, lineHeight: Math.round(titleSize * 1.2) }]} accessibilityRole="header" numberOfLines={2}>
+                {strings.welcome.title(config?.hospital.name ?? '')}
+              </Text>
             </Enter>
-            <Enter index={4} style={styles.fill}>
-              <BigTile
-                orientation="row"
-                title={strings.welcome.newPatient.title}
-                subtitle={strings.welcome.newPatient.subtitle}
-                icon="account-plus-outline"
-                color={colors.successBright}
-                disabled={busy}
-                onPress={() => router.push('/register')}
-                style={styles.fill}
-              />
+            <Enter index={1}>
+              <Text style={[styles.subtitle, { fontSize: layout.type.subtitle, lineHeight: Math.round(layout.type.subtitle * 1.36) }]}>{strings.welcome.subtitle}</Text>
             </Enter>
           </View>
-        </View>
 
-        <View style={styles.footer}>
-          {notice ? <Notice key="notice" message={notice} /> : <Help key="help" />}
-        </View>
-      </View>
+          <View style={[styles.choices, stacked && styles.choicesStacked]}>
+            <Enter index={2} style={stacked ? styles.fill : styles.cardColumn}>
+              <Animated.View style={[styles.fill, shakeStyle]}>
+                <BigTile
+                  title={strings.welcome.card.title}
+                  subtitle={cardLine}
+                  badge={strings.welcome.card.badge}
+                  badgeLive
+                  paused={!focused}
+                  selected={busy}
+                  onPress={busy ? undefined : showHint}
+                  art={<TapCardArt size={rippleSize} burst={phase === 'found'} paused={!focused} />}
+                  style={styles.fill}
+                />
+              </Animated.View>
+            </Enter>
+
+            <View style={stacked ? styles.otherStacked : styles.otherColumn}>
+              <Enter index={3} style={styles.fill}>
+                {!findByPhone ? (
+                  <AskAtCounter compact={compact} />
+                ) : (
+                  <BigTile
+                    orientation="row"
+                    title={strings.welcome.find.title}
+                    subtitle={strings.welcome.find.subtitle}
+                    icon="cellphone-message"
+                    color={colors.purple}
+                    disabled={busy}
+                    onPress={() => router.push('/find')}
+                    style={styles.fill}
+                  />
+                )}
+              </Enter>
+              <Enter index={4} style={styles.fill}>
+                <BigTile
+                  orientation="row"
+                  title={strings.welcome.newPatient.title}
+                  subtitle={strings.welcome.newPatient.subtitle}
+                  icon="account-plus-outline"
+                  color={colors.successBright}
+                  disabled={busy}
+                  onPress={() => router.push('/register')}
+                  style={styles.fill}
+                />
+              </Enter>
+            </View>
+          </View>
+
+          <View style={[styles.footer, { height: layout.touchMin }]}>
+            {notice ? <Notice key="notice" message={notice} /> : <Help key="help" />}
+          </View>
+        </Fragment>
+      </Screen>
     </View>
   );
 }
@@ -294,11 +306,11 @@ function TapCardArt({ size, burst, paused }: { size: number; burst: boolean; pau
 }
 
 /** In place of Find my record when the kiosk cannot send codes: the counter finds the record. */
-function AskAtCounter() {
+function AskAtCounter({ compact }: { compact: boolean }) {
   return (
-    <View style={styles.askCard} accessible accessibilityLabel={`${strings.welcome.findOff.title} ${strings.welcome.findOff.body}`}>
-      <View style={styles.askIcon}>
-        <MaterialCommunityIcons name="face-agent" size={38} color={colors.textSecondary} />
+    <View style={[styles.askCard, compact && styles.askCardCompact]} accessible accessibilityLabel={`${strings.welcome.findOff.title} ${strings.welcome.findOff.body}`}>
+      <View style={[styles.askIcon, compact && styles.askIconCompact]}>
+        <MaterialCommunityIcons name="face-agent" size={compact ? 30 : 38} color={colors.textSecondary} />
       </View>
       <View style={styles.askText}>
         <Text style={styles.askTitle}>{strings.welcome.findOff.title}</Text>
@@ -316,10 +328,13 @@ const footerOut = FadeOut.duration(motion.duration.fast).reduceMotion(ReduceMoti
 
 function Help() {
   const reduced = useReducedMotion();
+  const { type } = useLayout();
   return (
     <Animated.View entering={footerIn(reduced)} exiting={footerOut} style={styles.help}>
       <MaterialCommunityIcons name="face-agent" size={26} color={colors.textTertiary} />
-      <Text style={styles.helpText}>{strings.welcome.help}</Text>
+      <Text style={[styles.helpText, { fontSize: type.body, lineHeight: Math.round(type.body * 1.4) }]} numberOfLines={2}>
+        {strings.welcome.help}
+      </Text>
     </Animated.View>
   );
 }
@@ -327,6 +342,7 @@ function Help() {
 /** "This card isn't linked yet…": a calm amber note where the help line was, for 6 s. */
 function Notice({ message }: { message: string }) {
   const reduced = useReducedMotion();
+  const { type } = useLayout();
   return (
     <Animated.View
       entering={footerIn(reduced)}
@@ -336,7 +352,7 @@ function Notice({ message }: { message: string }) {
       accessibilityLiveRegion="polite"
     >
       <MaterialCommunityIcons name="card-account-details-outline" size={30} color={colors.warningText} />
-      <Text style={styles.noticeText} numberOfLines={2}>
+      <Text style={[styles.noticeText, { fontSize: type.body, lineHeight: Math.round(type.body * 1.4) }]} numberOfLines={2}>
         {message}
       </Text>
     </Animated.View>
@@ -345,24 +361,17 @@ function Notice({ message }: { message: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 1480,
-    alignSelf: 'center',
-    paddingHorizontal: sizes.screenGutter,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-    gap: spacing.lg,
-  },
-  fill: { flex: 1 },
+  // Fill blocks grow from their own height (not flex: 1), so a short window scrolls instead of squashing them.
+  fill: { flexGrow: 1 },
   intro: { gap: 6 },
-  title: { fontFamily: fonts.bold, fontSize: 40, lineHeight: 48, letterSpacing: -0.6, color: colors.textPrimary },
-  subtitle: { ...typography.bodyLarge, color: colors.textSecondary },
-  choices: { flex: 1, flexDirection: 'row', gap: spacing.lg },
+  title: { fontFamily: fonts.bold, letterSpacing: -0.6, color: colors.textPrimary },
+  subtitle: { fontFamily: typography.bodyLarge.fontFamily, color: colors.textSecondary },
+  choices: { flexGrow: 1, flexDirection: 'row', gap: spacing.lg },
+  choicesStacked: { flexDirection: 'column' },
   // The card is the fastest way in, so it gets the most room.
   cardColumn: { flex: 11 },
   otherColumn: { flex: 10, gap: spacing.lg },
+  otherStacked: { gap: spacing.md },
   cardShadow: { boxShadow: '0px 10px 22px rgba(14, 80, 214, 0.32)' },
   cardFace: { flex: 1, justifyContent: 'space-between', overflow: 'hidden' },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -381,11 +390,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  askCardCompact: { gap: 14, paddingHorizontal: 16, paddingVertical: 16 },
+  askIconCompact: { width: 56, height: 56, borderRadius: 18 },
   askIcon: { width: 72, height: 72, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
   askText: { flex: 1, gap: 4 },
   askTitle: { ...typography.headline, color: colors.textPrimary },
   askBody: { ...typography.body, fontSize: 18, lineHeight: 24, color: colors.textSecondary },
-  footer: { height: sizes.touchMin },
+  footer: {},
   help: { ...StyleSheet.absoluteFill, flexDirection: 'row', alignItems: 'center', gap: 12 },
   helpText: { ...typography.body, color: colors.textSecondary },
   notice: {

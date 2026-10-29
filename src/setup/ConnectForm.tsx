@@ -5,6 +5,7 @@ import { strings } from '../i18n/strings';
 import { normalizeApiUrl, type SetupLink } from '../lib/deeplink';
 import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { useLayout } from '../ui/useLayout';
 
 interface ConnectFormProps {
   title?: string;
@@ -22,6 +23,8 @@ interface ConnectFormProps {
 /** The server address and kiosk key form, shared by first-run setup and the staff "Change kiosk key". */
 export function ConnectForm({ title = strings.setup.title, intro = strings.setup.intro, onConnected, autoLink, linkError, onActivity }: ConnectFormProps) {
   const { connect, notice, address } = useKioskApp();
+  const layout = useLayout();
+  const compact = layout.size === 'compact';
   // Until typed in (or filled from a link), the field shows the address the kiosk already has.
   const [typedServer, setServer] = useState<string | null>(null);
   const server = typedServer ?? address;
@@ -64,10 +67,10 @@ export function ConnectForm({ title = strings.setup.title, intro = strings.setup
 
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.intro}>{intro}</Text>
+      <ScrollView contentContainerStyle={[styles.scroll, { padding: compact ? spacing.md : spacing.lg }]} keyboardShouldPersistTaps="handled">
+        <View style={[styles.card, compact && styles.cardCompact]}>
+          <Text style={[styles.title, { fontSize: compact ? 26 : 32, lineHeight: compact ? 32 : 40 }]}>{title}</Text>
+          <Text style={[styles.intro, { fontSize: layout.type.body }]}>{intro}</Text>
 
           {notice ? (
             <View style={styles.notice} accessibilityRole="alert">
@@ -134,7 +137,7 @@ export function ConnectForm({ title = strings.setup.title, intro = strings.setup
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  scroll: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  scroll: { flexGrow: 1, alignItems: 'center', justifyContent: 'center' },
   card: {
     width: '100%',
     maxWidth: 640,
@@ -145,7 +148,8 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.sm,
   },
-  title: { fontFamily: fonts.bold, fontSize: 32, color: colors.textPrimary },
+  cardCompact: { padding: spacing.md },
+  title: { fontFamily: fonts.bold, color: colors.textPrimary },
   intro: { fontFamily: fonts.regular, fontSize: 18, lineHeight: 26, color: colors.textSecondary, marginBottom: spacing.md },
   notice: { backgroundColor: colors.warningLight, borderRadius: radii.sm, padding: spacing.md, marginBottom: spacing.sm },
   noticeText: { fontFamily: fonts.medium, fontSize: 18, color: colors.navy },

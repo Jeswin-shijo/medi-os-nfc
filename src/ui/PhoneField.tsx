@@ -1,36 +1,44 @@
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion, useReducedMotion, ZoomIn } from 'react-native-reanimated';
 import { strings } from '../i18n/strings';
 import { formatIndianMobile } from '../lib/phone';
 import { easeOut } from '../motion/curves';
 import { colors, fonts, motion, radii } from '../theme/tokens';
+import { phoneMetrics } from './sizing';
 
 interface PhoneFieldProps {
   /** Up to ten digits. */
   digits: string;
 }
 
-/** The "+91" chip and a read-only number shown as ten cells (5 + 5). Each digit pops in as it is entered. */
+/** The "+91" chip and a read-only number shown as ten cells (5 + 5), sized to the row it is in. Each digit pops in as it is entered. */
 export function PhoneField({ digits }: PhoneFieldProps) {
   const reduced = useReducedMotion();
+  // Until measured, the tablet sizes (the row has its width a frame later).
+  const [rowWidth, setRowWidth] = useState(652);
+  const m = phoneMetrics(rowWidth);
   const entering = reduced
     ? FadeIn.duration(motion.duration.fast).reduceMotion(ReduceMotion.Never)
     : ZoomIn.duration(motion.duration.fast).easing(easeOut).withInitialValues({ transform: [{ scale: 0.4 }] });
 
   return (
-    <View style={styles.row} accessible accessibilityRole="text" accessibilityLabel={strings.find.numberLabel(formatIndianMobile(digits))}>
-      <View style={styles.prefix}>
-        <Text style={styles.prefixText}>{strings.find.prefix}</Text>
+    <View
+      style={[styles.row, { gap: m.gap }]}
+      onLayout={(e) => setRowWidth(Math.round(e.nativeEvent.layout.width))}
+      accessible accessibilityRole="text" accessibilityLabel={strings.find.numberLabel(formatIndianMobile(digits))}>
+      <View style={[styles.prefix, { width: m.prefixWidth }]}>
+        <Text style={[styles.prefixText, { fontSize: m.prefixFont, lineHeight: m.prefixFont + 8 }]}>{strings.find.prefix}</Text>
       </View>
-      <View style={[styles.field, digits.length > 0 && styles.fieldFilled]}>
+      <View style={[styles.field, { height: m.fieldHeight, paddingHorizontal: m.fieldPadding }, digits.length > 0 && styles.fieldFilled]}>
         {Array.from({ length: 10 }, (_, i) => (
-          <View key={i} style={[styles.cell, i === 4 && styles.groupGap]}>
+          <View key={i} style={[styles.cell, { width: m.cellWidth, height: m.cellHeight }, i === 4 && { marginRight: m.groupGap }]}>
             {digits[i] ? (
-              <Animated.Text key={`${i}-${digits[i]}`} entering={entering} style={styles.digit}>
+              <Animated.Text key={`${i}-${digits[i]}`} entering={entering} style={[styles.digit, { fontSize: m.digitFont, lineHeight: m.digitFont + 8 }]}>
                 {digits[i]}
               </Animated.Text>
             ) : (
-              <View style={[styles.dash, i === digits.length && styles.dashNext]} />
+              <View style={[styles.dash, { width: m.dashWidth }, i === digits.length && styles.dashNext]} />
             )}
           </View>
         ))}
@@ -40,25 +48,22 @@ export function PhoneField({ digits }: PhoneFieldProps) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 12, alignItems: 'stretch' },
-  prefix: { width: 96, borderRadius: radii.md, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  prefixText: { fontFamily: fonts.semibold, fontSize: 32, lineHeight: 40, color: colors.primaryDark },
+  row: { flexDirection: 'row', alignItems: 'stretch' },
+  prefix: { borderRadius: radii.md, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
+  prefixText: { fontFamily: fonts.semibold, color: colors.primaryDark },
   field: {
     flex: 1,
-    height: 96,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
     borderRadius: radii.md,
     borderWidth: 2,
     borderColor: colors.border,
     backgroundColor: colors.card,
   },
   fieldFilled: { borderColor: colors.primary },
-  cell: { width: 38, height: 56, alignItems: 'center', justifyContent: 'center' },
-  groupGap: { marginRight: 20 },
-  digit: { fontFamily: fonts.semibold, fontSize: 40, lineHeight: 48, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
-  dash: { width: 20, height: 4, borderRadius: 2, backgroundColor: colors.border },
+  cell: { alignItems: 'center', justifyContent: 'center' },
+  digit: { fontFamily: fonts.semibold, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
+  dash: { height: 4, borderRadius: 2, backgroundColor: colors.border },
   dashNext: { backgroundColor: colors.primary },
 });

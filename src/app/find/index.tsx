@@ -11,13 +11,16 @@ import { isValidIndianMobile } from '../../lib/phone';
 import { Enter } from '../../motion/Enter';
 import { feedback } from '../../motion/feedback';
 import { useKioskApp } from '../../store/useKioskApp';
-import { colors, motion, radii, shadows, sizes, spacing, typography } from '../../theme/tokens';
+import { colors, motion, radii, shadows, spacing, typography } from '../../theme/tokens';
 import { Button } from '../../ui/Button';
 import { ChoicePanel } from '../../ui/ChoicePanel';
 import { NumberPad } from '../../ui/NumberPad';
 import { PhoneField } from '../../ui/PhoneField';
+import { Screen } from '../../ui/Screen';
+import { padWidth, sideBySide } from '../../ui/sizing';
 import { StepTitle } from '../../ui/StepTitle';
 import { useShake } from '../../ui/Shake';
+import { useLayout } from '../../ui/useLayout';
 
 /** Find my record, step 1: the mobile number the hospital has on file. */
 export default function FindMobile() {
@@ -30,6 +33,7 @@ export default function FindMobile() {
   const [notFound, setNotFound] = useState(false);
   const inFlight = useRef(false);
   const { style: shakeStyle, shake } = useShake();
+  const layout = useLayout();
 
   const valid = isValidIndianMobile(digits);
   const message = error ?? notice;
@@ -74,7 +78,7 @@ export default function FindMobile() {
 
   if (notFound) {
     return (
-      <View style={styles.screen}>
+      <Screen>
         <StepTitle title={strings.find.title} />
         <ChoicePanel
           icon="account-search-outline"
@@ -97,15 +101,19 @@ export default function FindMobile() {
             },
           }}
         />
-      </View>
+      </Screen>
     );
   }
 
+  // The number display above the pad on a phone upright or a small tablet; side by side where there is room.
+  const beside = sideBySide(layout);
+  const compact = layout.size === 'compact';
+
   return (
-    <View style={styles.screen}>
+    <Screen>
       <StepTitle title={strings.find.title} subtitle={strings.find.subtitle} />
-      <View style={styles.body}>
-        <Enter index={1} style={styles.entry}>
+      <View style={[styles.body, !beside && styles.bodyStacked]}>
+        <Enter index={1} style={[styles.entry, beside && styles.entryBeside, compact && styles.entryCompact]}>
           <Animated.View style={[styles.field, shakeStyle]}>
             <PhoneField digits={digits} />
           </Animated.View>
@@ -119,7 +127,7 @@ export default function FindMobile() {
             onPress={() => void send()}
           />
         </Enter>
-        <Enter index={2} style={styles.pad}>
+        <Enter index={2} style={{ width: padWidth(layout), alignSelf: 'center' }}>
           <NumberPad
             disabled={sending}
             onDigit={(d) => change(digits.length < 10 ? digits + d : digits)}
@@ -128,7 +136,7 @@ export default function FindMobile() {
           />
         </Enter>
       </View>
-    </View>
+    </Screen>
   );
 }
 
@@ -149,19 +157,9 @@ function Message({ text }: { text: string }) {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 1480,
-    alignSelf: 'center',
-    paddingHorizontal: sizes.screenGutter,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-    gap: spacing.lg,
-  },
-  body: { flex: 1, flexDirection: 'row', gap: spacing.xl, alignItems: 'center' },
+  body: { flexGrow: 1, flexDirection: 'row', gap: spacing.xl, alignItems: 'center' },
+  bodyStacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.md },
   entry: {
-    flex: 1,
     gap: spacing.md,
     padding: spacing.lg,
     borderRadius: radii.lg,
@@ -170,6 +168,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     boxShadow: shadows.card,
   },
+  entryBeside: { flex: 1 },
+  entryCompact: { padding: spacing.md },
   field: { alignSelf: 'stretch' },
   messageSlot: { minHeight: 56, justifyContent: 'center' },
   message: {
@@ -183,6 +183,4 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.warningBorder,
   },
-  messageText: { ...typography.caption, fontSize: 18, lineHeight: 24, color: colors.warningText, flexShrink: 1 },
-  pad: { width: 460 },
-});
+  messageText: { ...typography.caption, fontSize: 18, lineHeight: 24, color: colors.warningText, flexShrink: 1 },});

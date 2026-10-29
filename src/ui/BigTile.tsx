@@ -7,6 +7,7 @@ import { withAlpha } from '../theme/color';
 import { colors, motion, radii, shadows, typography } from '../theme/tokens';
 import type { IconName } from './Button';
 import { LiveDot } from './LiveDot';
+import { useLayout } from './useLayout';
 
 interface BigTileProps {
   title: string;
@@ -53,6 +54,8 @@ export function BigTile({
   accessibilityLabel,
 }: BigTileProps) {
   const reduced = useReducedMotion();
+  const layout = useLayout();
+  const compact = layout.size === 'compact';
   const lift = useSharedValue(selected ? 1 : 0);
   useEffect(() => {
     lift.value = withSpring(selected ? 1 : 0, motion.spring.settle);
@@ -74,14 +77,15 @@ export function BigTile({
         style={[
           styles.tile,
           row ? styles.row : styles.column,
+          compact && (row ? styles.rowCompact : styles.columnCompact),
           filled ? { backgroundColor: color } : styles.surface,
           selected && { borderColor: color, borderWidth: 2, boxShadow: shadows.lifted },
           disabled && styles.disabled,
         ]}
       >
-        {art ?? (icon ? <IconBadge icon={icon} color={color} filled={filled} large={!row} /> : null)}
+        {art ?? (icon ? <IconBadge icon={icon} color={color} filled={filled} large={!row} compact={compact} /> : null)}
         <View style={[styles.text, row ? styles.textRow : styles.textColumn]}>
-          <Text style={[styles.title, { color: ink }, !row && styles.centred]} numberOfLines={2}>
+          <Text style={[styles.title, compact && styles.titleCompact, { color: ink }, !row && styles.centred]} numberOfLines={2}>
             {title}
           </Text>
           {subtitle ? (
@@ -90,7 +94,7 @@ export function BigTile({
             </Text>
           ) : null}
         </View>
-        {row ? <MaterialCommunityIcons name="chevron-right" size={36} color={filled ? ink : colors.textTertiary} /> : null}
+        {row ? <MaterialCommunityIcons name="chevron-right" size={compact ? 28 : 36} color={filled ? ink : colors.textTertiary} /> : null}
         {badge ? (
           <View style={[styles.badge, { backgroundColor: filled ? 'rgba(255, 255, 255, 0.22)' : withAlpha(color, 0.12) }]}>
             {badgeLive ? <LiveDot color={filled ? colors.textOnColor : color} size={8} paused={paused} /> : null}
@@ -102,8 +106,8 @@ export function BigTile({
   );
 }
 
-function IconBadge({ icon, color, filled, large }: { icon: IconName; color: string; filled: boolean; large: boolean }) {
-  const box = large ? 80 : 72;
+function IconBadge({ icon, color, filled, large, compact }: { icon: IconName; color: string; filled: boolean; large: boolean; compact: boolean }) {
+  const box = compact ? 56 : large ? 80 : 72;
   return (
     <View
       style={[
@@ -111,7 +115,7 @@ function IconBadge({ icon, color, filled, large }: { icon: IconName; color: stri
         { width: box, height: box, backgroundColor: filled ? 'rgba(255, 255, 255, 0.2)' : withAlpha(color, 0.12) },
       ]}
     >
-      <MaterialCommunityIcons name={icon} size={large ? 44 : 38} color={filled ? colors.textOnColor : color} />
+      <MaterialCommunityIcons name={icon} size={compact ? 32 : large ? 44 : 38} color={filled ? colors.textOnColor : color} />
     </View>
   );
 }
@@ -122,11 +126,14 @@ const styles = StyleSheet.create({
   surface: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, boxShadow: shadows.card },
   row: { flexDirection: 'row', alignItems: 'center', gap: 24, minHeight: 128, paddingHorizontal: 28, paddingVertical: 24 },
   column: { alignItems: 'center', justifyContent: 'center', gap: 18, minHeight: 196, paddingHorizontal: 20, paddingVertical: 28 },
+  rowCompact: { gap: 16, minHeight: 96, paddingHorizontal: 18, paddingVertical: 16 },
+  columnCompact: { gap: 12, minHeight: 150, paddingHorizontal: 14, paddingVertical: 20 },
   disabled: { opacity: 0.45 },
   text: { gap: 4 },
   textRow: { flex: 1 },
   textColumn: { alignSelf: 'stretch' },
   title: { ...typography.headline },
+  titleCompact: { fontSize: 22, lineHeight: 28 },
   subtitle: { ...typography.caption, fontFamily: typography.body.fontFamily, fontSize: 18, lineHeight: 24 },
   centred: { textAlign: 'center' },
   iconBadge: { borderRadius: 22, alignItems: 'center', justifyContent: 'center' },

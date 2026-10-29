@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { strings } from '../i18n/strings';
 import { parseSetupLink } from '../lib/deeplink';
 import { ConnectForm } from '../setup/ConnectForm';
@@ -8,22 +8,24 @@ import { decideSetupScreen } from '../staff/setupLinkPolicy';
 import { useStaffSession } from '../staff/useStaffSession';
 import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts } from '../theme/tokens';
+import { useLayout } from '../ui/useLayout';
 
 function RemovedNotice({ title }: { title: string }) {
+  const { type, gutter, size } = useLayout();
   return (
-    <View style={styles.removed}>
-      <Text style={styles.removedTitle} accessibilityRole="header">
+    <ScrollView contentContainerStyle={[styles.removed, { padding: gutter }]}>
+      <Text style={[styles.removedTitle, { fontSize: size === 'compact' ? 26 : 32, lineHeight: size === 'compact' ? 32 : 40 }]} accessibilityRole="header">
         {title}
       </Text>
-      <Text style={styles.removedHint}>{strings.offline.staffHint}</Text>
-    </View>
+      <Text style={[styles.removedHint, { fontSize: type.body }]}>{strings.offline.staffHint}</Text>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  removed: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 40 },
-  removedTitle: { fontFamily: fonts.bold, fontSize: 32, color: colors.textPrimary, textAlign: 'center' },
-  removedHint: { fontFamily: fonts.regular, fontSize: 18, color: colors.textTertiary, textAlign: 'center' },
+  removed: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
+  removedTitle: { fontFamily: fonts.bold, color: colors.textPrimary, textAlign: 'center' },
+  removedHint: { fontFamily: fonts.regular, color: colors.textTertiary, textAlign: 'center' },
 });
 
 const first = (value: string | string[] | undefined): string | undefined => (Array.isArray(value) ? value[0] : value);

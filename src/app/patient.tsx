@@ -6,10 +6,13 @@ import { useFlow } from '../flow/useFlow';
 import { strings } from '../i18n/strings';
 import { easeOut } from '../motion/curves';
 import { Enter } from '../motion/Enter';
-import { colors, fonts, motion, radii, shadows, sizes, spacing, typography } from '../theme/tokens';
+import { colors, fonts, motion, radii, shadows, spacing, typography } from '../theme/tokens';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
+import { Screen } from '../ui/Screen';
+import { contentWidth, fit } from '../ui/sizing';
 import { StepTitle } from '../ui/StepTitle';
+import { useLayout } from '../ui/useLayout';
 
 /** The details rise in after the avatar and the badge. */
 const DETAILS_DELAY_MS = 220;
@@ -19,6 +22,7 @@ export default function PatientFound() {
   const patient = useFlow((s) => s.patient);
   const appointment = useFlow((s) => s.appointmentToday);
   const reduced = useReducedMotion();
+  const layout = useLayout();
 
   if (!patient) return <Redirect href="/" />;
 
@@ -43,42 +47,49 @@ export default function PatientFound() {
         .easing(easeOut)
         .withInitialValues({ opacity: 0, transform: [{ translateX: -24 }] });
 
+  const compact = layout.size === 'compact';
+  const small = compact || layout.short;
+  const available = contentWidth(layout);
+  // A phone upright stacks the identity above the facts, and the actions go full width with Continue first.
+  const identityWidth = fit(400, Math.round(available * 0.4));
+  const factSize = compact ? { fontSize: layout.type.subtitle + 2, lineHeight: 26 } : null;
+
   return (
-    <View style={styles.screen}>
+    <Screen>
       <StepTitle title={strings.patient.title} subtitle={strings.patient.subtitle} />
 
-      <Enter style={styles.card}>
-        <View style={styles.identity}>
+      <Enter style={[styles.card, compact && styles.cardStacked]}>
+        <View style={[styles.identity, compact ? styles.identityStacked : { width: identityWidth }, small && styles.identitySmall]}>
           <Animated.View entering={avatarIn}>
-            <Avatar name={patient.name} size={120} />
+            <Avatar name={patient.name} size={small ? 88 : 120} />
           </Animated.View>
           <Animated.View entering={badgeIn} style={styles.badge} accessibilityRole="text">
             <MaterialCommunityIcons name="check-decagram" size={22} color={colors.success} />
             <Text style={styles.badgeText}>{strings.patient.identified}</Text>
           </Animated.View>
           <Enter index={1} delay={DETAILS_DELAY_MS - motion.stagger} style={styles.nameBlock}>
-            <Text style={styles.name} numberOfLines={2} accessibilityRole="header">
+            <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={2} accessibilityRole="header">
               {patient.name}
             </Text>
             <Text style={styles.uhid}>{strings.patient.uhid(patient.uhid)}</Text>
           </Enter>
         </View>
 
-        <View style={styles.divider} />
+        <View style={compact ? styles.dividerStacked : styles.divider} />
 
-        <View style={styles.details}>
+        <View style={[styles.details, small && styles.detailsSmall]}>
           <View style={styles.facts}>
             {facts.map((fact, i) => (
-              <Enter key={fact.label} index={i} delay={DETAILS_DELAY_MS} style={styles.fact}>
+              <Enter key={fact.label} index={i} delay={DETAILS_DELAY_MS} style={[styles.fact, compact && styles.factFull]}>
                 <Text style={styles.factLabel}>{fact.label}</Text>
-                <Text style={styles.factValue} numberOfLines={1}>
+                <Text style={[styles.factValue, factSize]} numberOfLines={1}>
                   {fact.value}
                 </Text>
               </Enter>
             ))}
           </View>
           {appointment ? (
-            <Enter index={facts.length} delay={DETAILS_DELAY_MS} style={styles.appointment}>
+            <Enter index={facts.length} delay={DETAILS_DELAY_MS} style={[styles.appointment, compact && styles.appointmentCompact]}>
               <MaterialCommunityIcons name="calendar-clock" size={28} color={colors.primaryDark} />
               <Text style={styles.appointmentText}>{strings.patient.appointment(appointment.time)}</Text>
             </Enter>
@@ -86,7 +97,7 @@ export default function PatientFound() {
         </View>
       </Enter>
 
-      <Enter index={2} delay={DETAILS_DELAY_MS} style={styles.actions}>
+      <Enter index={2} delay={DETAILS_DELAY_MS} style={[styles.actions, compact && styles.actionsStacked]}>
         <Button
           label={strings.patient.notMe}
           variant="secondary"
@@ -101,26 +112,16 @@ export default function PatientFound() {
           icon="arrow-right"
           iconPosition="end"
           onPress={() => router.push('/department')}
-          style={styles.continue}
+          style={{ minWidth: fit(320, Math.round(available * 0.55)) }}
         />
       </Enter>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 1480,
-    alignSelf: 'center',
-    paddingHorizontal: sizes.screenGutter,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-    gap: spacing.lg,
-  },
   card: {
-    flex: 1,
+    flexGrow: 1,
     flexDirection: 'row',
     borderRadius: radii.lg,
     backgroundColor: colors.card,
@@ -128,7 +129,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     boxShadow: shadows.card,
   },
-  identity: { width: 400, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
+  cardStacked: { flexDirection: 'column' },
+  identity: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
+  identityStacked: { alignSelf: 'stretch', padding: spacing.lg },
+  identitySmall: { gap: spacing.sm, padding: spacing.md },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -139,12 +143,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentLight,
   },
   badgeText: { ...typography.label, color: colors.success },
+  nameCompact: { fontSize: 26, lineHeight: 32 },
   nameBlock: { alignItems: 'center', gap: 4, alignSelf: 'stretch' },
   name: { ...typography.title, color: colors.textPrimary, textAlign: 'center' },
   uhid: { ...typography.label, fontFamily: fonts.medium, color: colors.textSecondary, fontVariant: ['tabular-nums'], letterSpacing: 0.4 },
   divider: { width: 1, marginVertical: spacing.xl, backgroundColor: colors.border },
-  details: { flex: 1, justifyContent: 'center', gap: spacing.lg, paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
+  dividerStacked: { height: 1, marginHorizontal: spacing.lg, backgroundColor: colors.border },
+  detailsSmall: { gap: spacing.md, paddingHorizontal: spacing.md, paddingVertical: spacing.md },
+  details: { flexGrow: 1, flexShrink: 1, justifyContent: 'center', gap: spacing.lg, paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
   facts: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.lg },
+  factFull: { width: '100%' },
   fact: { width: '50%', paddingRight: spacing.lg, gap: 4 },
   factLabel: { ...typography.caption, color: colors.textTertiary },
   factValue: { ...typography.headline, fontFamily: fonts.medium, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
@@ -157,7 +165,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: colors.primaryLight,
   },
+  appointmentCompact: { paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
   appointmentText: { ...typography.bodyLarge, fontFamily: fonts.medium, color: colors.primaryDark, flexShrink: 1 },
   actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.md },
-  continue: { minWidth: 320 },
+  // Continue first, under the thumb, when the buttons stack.
+  actionsStacked: { flexDirection: 'column-reverse', justifyContent: 'flex-start' },
 });

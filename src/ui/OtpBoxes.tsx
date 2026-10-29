@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -16,6 +16,7 @@ import Animated, {
 import { strings } from '../i18n/strings';
 import { easeOut } from '../motion/curves';
 import { colors, fonts, motion, radii } from '../theme/tokens';
+import { otpMetrics, type OtpMetrics } from './sizing';
 import { useShake } from './Shake';
 
 export type OtpStatus = 'idle' | 'error' | 'success';
@@ -33,25 +34,29 @@ interface OtpBoxesProps {
  */
 export function OtpBoxes({ value, length = 6, status = 'idle' }: OtpBoxesProps) {
   const { style: shakeStyle, shake } = useShake();
+  // Until measured, the tablet sizes (the row has its width a frame later).
+  const [rowWidth, setRowWidth] = useState(600);
+  const m = otpMetrics(rowWidth, length);
   useEffect(() => {
     if (status === 'error') shake();
   }, [status, shake]);
 
   return (
     <Animated.View
-      style={[styles.row, shakeStyle]}
+      style={[styles.row, { gap: m.gap }, shakeStyle]}
+      onLayout={(e) => setRowWidth(Math.round(e.nativeEvent.layout.width))}
       accessible
       accessibilityRole="text"
       accessibilityLabel={strings.otp.label(value.length, length)}
     >
       {Array.from({ length }, (_, i) => (
-        <Box key={i} index={i} digit={value[i]} active={status === 'idle' && i === value.length} status={status} />
+        <Box key={i} index={i} metrics={m} digit={value[i]} active={status === 'idle' && i === value.length} status={status} />
       ))}
     </Animated.View>
   );
 }
 
-function Box({ index, digit, active, status }: { index: number; digit?: string; active: boolean; status: OtpStatus }) {
+function Box({ index, digit, active, status, metrics }: { index: number; digit?: string; active: boolean; status: OtpStatus; metrics: OtpMetrics }) {
   const reduced = useReducedMotion();
   const glow = useSharedValue(0);
   const pulse = useSharedValue(1);
@@ -87,10 +92,10 @@ function Box({ index, digit, active, status }: { index: number; digit?: string; 
     : ZoomIn.duration(motion.duration.fast).easing(easeOut).withInitialValues({ transform: [{ scale: 0.4 }] });
 
   return (
-    <Animated.View style={[styles.box, tone, boxStyle]}>
+    <Animated.View style={[styles.box, { width: metrics.boxWidth, height: metrics.boxHeight }, tone, boxStyle]}>
       <Animated.View pointerEvents="none" style={[styles.ring, ringStyle]} />
       {digit ? (
-        <Animated.Text key={`${index}-${digit}`} entering={entering} style={[styles.digit, status === 'error' && styles.digitError]}>
+        <Animated.Text key={`${index}-${digit}`} entering={entering} style={[styles.digit, { fontSize: metrics.digitFont, lineHeight: metrics.digitFont + 8 }, status === 'error' && styles.digitError]}>
           {digit}
         </Animated.Text>
       ) : null}
@@ -99,10 +104,8 @@ function Box({ index, digit, active, status }: { index: number; digit?: string; 
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 14, alignSelf: 'center' },
+  row: { flexDirection: 'row', alignSelf: 'stretch', justifyContent: 'center' },
   box: {
-    width: 72,
-    height: 88,
     borderRadius: radii.md,
     borderWidth: 2,
     borderColor: colors.border,
@@ -115,6 +118,6 @@ const styles = StyleSheet.create({
   filled: { borderColor: colors.borderDark },
   error: { borderColor: colors.dangerStrong, backgroundColor: colors.dangerLight },
   success: { borderColor: colors.success, backgroundColor: colors.accentLight },
-  digit: { fontFamily: fonts.semibold, fontSize: 40, lineHeight: 48, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
+  digit: { fontFamily: fonts.semibold, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
   digitError: { color: colors.dangerStrong },
 });

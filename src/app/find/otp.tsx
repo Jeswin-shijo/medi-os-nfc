@@ -20,7 +20,10 @@ import { NumberPad } from '../../ui/NumberPad';
 import { OtpBoxes, type OtpStatus } from '../../ui/OtpBoxes';
 import { RingCountdown } from '../../ui/RingCountdown';
 import { SampleStrip } from '../../ui/SampleStrip';
+import { Screen } from '../../ui/Screen';
+import { padWidth, sideBySide } from '../../ui/sizing';
 import { StepTitle } from '../../ui/StepTitle';
+import { useLayout } from '../../ui/useLayout';
 
 const CODE_LENGTH = 6;
 /** The boxes stay green this long before the next screen slides in. */
@@ -53,6 +56,7 @@ export default function FindOtp() {
   const [resending, setResending] = useState(false);
   const inFlight = useRef(false);
   const timer = useRef<Timer>(undefined);
+  const layout = useLayout();
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -161,11 +165,14 @@ export default function FindOtp() {
   };
   const shown = formatIndianMobile(phone);
 
+  const beside = sideBySide(layout);
+  const compact = layout.size === 'compact';
+
   return (
-    <View style={styles.screen}>
+    <Screen>
       <StepTitle title={strings.find.otp.title} subtitle={strings.find.otp.sent(shown)} />
-      <View style={styles.body}>
-        <Enter index={1} style={styles.panel}>
+      <View style={[styles.body, !beside && styles.bodyStacked]}>
+        <Enter index={1} style={[styles.panel, beside && styles.panelBeside, compact && styles.panelCompact]}>
           <OtpBoxes value={code} length={CODE_LENGTH} status={status} />
 
           <View style={styles.messageSlot}>
@@ -176,7 +183,7 @@ export default function FindOtp() {
 
           {sampleSms && sampleCode ? <SampleStrip text={strings.find.otp.sampleCode(sampleCode)} /> : null}
 
-          <View style={styles.resendRow}>
+          <View style={[styles.resendRow, compact && styles.resendRowCompact]}>
             {canResend ? (
               <Button
                 label={resending ? strings.find.otp.resending : strings.find.otp.resend}
@@ -193,11 +200,11 @@ export default function FindOtp() {
           </View>
         </Enter>
 
-        <Enter index={2} style={styles.pad}>
+        <Enter index={2} style={{ width: padWidth(layout), alignSelf: 'center' }}>
           <NumberPad disabled={locked} onDigit={addDigit} onBackspace={() => setCode((c) => c.slice(0, -1))} onClear={() => setCode('')} />
         </Enter>
       </View>
-    </View>
+    </Screen>
   );
 }
 
@@ -229,19 +236,9 @@ function Line({ tone, icon, text }: { tone: 'info' | 'warn' | 'ok'; icon: 'shiel
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    width: '100%',
-    maxWidth: 1480,
-    alignSelf: 'center',
-    paddingHorizontal: sizes.screenGutter,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-    gap: spacing.lg,
-  },
-  body: { flex: 1, flexDirection: 'row', gap: spacing.xl, alignItems: 'center' },
+  body: { flexGrow: 1, flexDirection: 'row', gap: spacing.xl, alignItems: 'center' },
+  bodyStacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.md },
   panel: {
-    flex: 1,
     gap: spacing.md,
     padding: spacing.lg,
     borderRadius: radii.lg,
@@ -250,11 +247,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     boxShadow: shadows.card,
   },
+  panelBeside: { flex: 1 },
+  panelCompact: { padding: spacing.md },
   messageSlot: { minHeight: 36, alignItems: 'center', justifyContent: 'center' },
   line: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   lineText: { ...typography.label, flexShrink: 1 },
   resendRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  // Resend and Change number wrap onto two lines on a narrow phone.
+  resendRowCompact: { flexWrap: 'wrap', justifyContent: 'center' },
   waiting: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: sizes.touchMin },
-  waitingText: { ...typography.body, color: colors.textSecondary, fontVariant: ['tabular-nums'] },
-  pad: { width: 460 },
-});
+  waitingText: { ...typography.body, color: colors.textSecondary, fontVariant: ['tabular-nums'] },});

@@ -2,7 +2,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { strings } from '../i18n/strings';
 import { PressableScale } from '../motion/Pressable';
-import { colors, fonts, radii, sizes, typography } from '../theme/tokens';
+import { colors, fonts, radii, typography } from '../theme/tokens';
+import { keyHeight as keyHeightFor } from './sizing';
+import { useLayout } from './useLayout';
 
 type Key = { kind: 'digit'; digit: string } | { kind: 'clear' } | { kind: 'backspace' };
 
@@ -18,13 +20,17 @@ interface NumberPadProps {
   onBackspace: () => void;
   onClear?: () => void;
   disabled?: boolean;
-  /** Key height (dp). */
+  /** Key height (dp); by default from the window (80 on a tablet, 52 on a phone on its side). */
   keyHeight?: number;
   style?: StyleProp<ViewStyle>;
 }
 
 /** A phone-style keypad: 1–9, then Clear · 0 · delete. Fills the width it is given. */
-export function NumberPad({ onDigit, onBackspace, onClear, disabled = false, keyHeight = sizes.numberKey, style }: NumberPadProps) {
+export function NumberPad({ onDigit, onBackspace, onClear, disabled = false, keyHeight, style }: NumberPadProps) {
+  const layout = useLayout();
+  const height = keyHeight ?? keyHeightFor(layout);
+  const gap = layout.short || layout.size === 'compact' ? 8 : 12;
+  const digitSize = height < 64 ? 28 : 34;
   const press = (key: Key) => {
     if (key.kind === 'digit') onDigit(key.digit);
     else if (key.kind === 'backspace') onBackspace();
@@ -32,9 +38,9 @@ export function NumberPad({ onDigit, onBackspace, onClear, disabled = false, key
   };
 
   return (
-    <View style={[styles.pad, style]}>
+    <View style={[styles.pad, { gap }, style]}>
       {ROWS.map((row, r) => (
-        <View key={r} style={styles.row}>
+        <View key={r} style={[styles.row, { gap }]}>
           {row.map((key) => {
             const hidden = key.kind === 'clear' && !onClear;
             const label = key.kind === 'digit' ? key.digit : key.kind === 'clear' ? strings.numberPad.clear : strings.numberPad.backspace;
@@ -46,14 +52,14 @@ export function NumberPad({ onDigit, onBackspace, onClear, disabled = false, key
                 disabled={disabled}
                 accessibilityLabel={label}
                 highlight="rgba(30, 107, 255, 0.12)"
-                style={[styles.slot, styles.key, key.kind !== 'digit' && styles.keyAction, { height: keyHeight }, disabled && styles.keyDisabled]}
+                style={[styles.slot, styles.key, key.kind !== 'digit' && styles.keyAction, { height }, disabled && styles.keyDisabled]}
               >
                 {key.kind === 'digit' ? (
-                  <Text style={styles.digit}>{key.digit}</Text>
+                  <Text style={[styles.digit, { fontSize: digitSize, lineHeight: digitSize + 6 }]}>{key.digit}</Text>
                 ) : key.kind === 'clear' ? (
                   <Text style={styles.action}>{strings.numberPad.clear}</Text>
                 ) : (
-                  <MaterialCommunityIcons name="backspace-outline" size={32} color={colors.textSecondary} />
+                  <MaterialCommunityIcons name="backspace-outline" size={height < 64 ? 26 : 32} color={colors.textSecondary} />
                 )}
               </PressableScale>
             );
@@ -65,8 +71,8 @@ export function NumberPad({ onDigit, onBackspace, onClear, disabled = false, key
 }
 
 const styles = StyleSheet.create({
-  pad: { gap: 12 },
-  row: { flexDirection: 'row', gap: 12 },
+  pad: {},
+  row: { flexDirection: 'row' },
   slot: { flex: 1 },
   key: {
     borderRadius: radii.md,
