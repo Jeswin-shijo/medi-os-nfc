@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "MediOS AI Reception",
+    "slug": "hospital-nfc-app",
+    "scheme": "medios-reception",
+    "version": "1.0.0",
+    "orientation": "landscape",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.medios.reception"
+    },
+    "android": {
+      "package": "com.medios.reception",
+      "adaptiveIcon": {
+        "backgroundColor": "#1E6BFF"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "react-native-nfc-manager",
+        {
+          "nfcPermission": "Allow MediOS Reception Kiosk to scan and write patient NFC smartcards",
+          "includeNdefEntitlement": true
+        }
+      ]
+    ]
+  }
+}
+

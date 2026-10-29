@@ -1,0 +1,91 @@
+import { Department, Doctor, Patient } from '../store/useKioskStore';
+
+export const DEPARTMENTS: Department[] = [
+  { id: 'gen-med', name: 'General Medicine', icon: 'medical-services', color: '#1E6BFF' },
+  { id: 'pediatrics', name: 'Pediatrics', icon: 'child-care', color: '#EC4899' },
+  { id: 'cardiology', name: 'Cardiology', icon: 'favorite', color: '#EF4444' },
+  { id: 'orthopedics', name: 'Orthopedics', icon: 'accessibility', color: '#8B5CF6' },
+  { id: 'gynecology', name: 'Gynecology', icon: 'pregnant-woman', color: '#F43F5E' },
+  { id: 'dermatology', name: 'Dermatology', icon: 'healing', color: '#F59E0B' },
+];
+
+export const DOCTORS: Doctor[] = [
+  {
+    id: 'doc-1',
+    name: 'Dr. Arun Kumar',
+    deptId: 'gen-med',
+    deptName: 'General Medicine',
+    qualifications: 'MBBS, MD (Gen Med)',
+    fee: 300,
+    availability: 'Available Now',
+    availableStatus: 'now',
+    room: 'Room 101',
+  },
+  {
+    id: 'doc-2',
+    name: 'Dr. Priya Fernandez',
+    deptId: 'gen-med',
+    deptName: 'General Medicine',
+    qualifications: 'MBBS, DNB',
+    fee: 300,
+    availability: 'Available in 20 mins',
+    availableStatus: 'soon',
+    room: 'Room 102',
+  },
+  {
+    id: 'doc-3',
+    name: 'Dr. Suresh Nair',
+    deptId: 'gen-med',
+    deptName: 'General Medicine',
+    qualifications: 'MBBS, MD',
+    fee: 300,
+    availability: 'Available at 11:30 AM',
+    availableStatus: 'later',
+    room: 'Room 104',
+  },
+  {
+    id: 'doc-4',
+    name: 'Dr. Meena Shajin',
+    deptId: 'pediatrics',
+    deptName: 'Pediatrics',
+    qualifications: 'MBBS, DCH, MD',
+    fee: 350,
+    availability: 'Available Now',
+    availableStatus: 'now',
+    room: 'Room 201',
+  },
+  {
+    id: 'doc-5',
+    name: 'Dr. Rajesh Pillai',
+    deptId: 'cardiology',
+    deptName: 'Cardiology',
+    qualifications: 'MBBS, MD, DM (Cardio)',
+    fee: 500,
+    availability: 'Available Now',
+    availableStatus: 'now',
+    room: 'Room 305',
+  },
+  {
+    id: 'doc-6',
+    name: 'Dr. John Varghese',
+    deptId: 'orthopedics',
+    deptName: 'Orthopedics',
+    qualifications: 'MBBS, MS (Ortho)',
+    fee: 400,
+    availability: 'Available in 15 mins',
+    availableStatus: 'soon',
+    room: 'Room 108',
+  },
+];
+
+export const MOCK_PATIENT: Patient = {
+  id: 'pat-1024',
+  uhid: 'PAT-1024',
+  name: 'Ramesh Kumar',
+  age: 45,
+  gender: 'Male',
+  phone: '+91 98765 43210',
+  lastVisit: '12 Sep 2026',
+  address: 'Nagercoil, Kanyakumari',
+};
+
