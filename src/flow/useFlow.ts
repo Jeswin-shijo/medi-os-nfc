@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { create } from 'zustand';
 import type { IdentifyResult, KioskDepartment, KioskDoctor, KioskTokenView, PatientSummary, VisitView } from '../api/types';
 import { useKioskApp } from '../store/useKioskApp';
+import { useFind } from './useFind';
 
 export type IdentifiedVia = 'card' | 'otp' | 'register';
 
@@ -85,6 +86,8 @@ export const useFlow = create<FlowState>((set, get) => ({
     }
     const reset = ++generation;
     set({ resetting: true });
+    // Nobody's number or family list stays behind for the next person.
+    useFind.getState().clear();
     // Let the Stack pick up the fade before the screens go: two separate commits.
     setTimeout(() => {
       // Back to the Welcome screen already in the stack (or onto it): history never piles up over a day.

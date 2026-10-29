@@ -59,6 +59,10 @@ export default function RootLayout() {
               <Stack.Screen name="index" />
               <Stack.Screen name="patient" />
               <Stack.Screen name="has-token" />
+              <Stack.Screen name="find/index" />
+              <Stack.Screen name="find/otp" />
+              <Stack.Screen name="find/choose" />
+              <Stack.Screen name="register" />
             </Stack.Protected>
             <Stack.Screen name="setup" />
           </Stack>
