@@ -76,3 +76,10 @@ test('the OP number and the time share a row only where both fit; narrow slips p
   assert.equal(ticketSizes(layoutFor(952, 427)).topRow, false);
   assert.equal(ticketSizes(layoutFor(1024, 640)).topRow, false);
 });
+
+test('the OP number keeps 24 sp wherever its line fits, and steps down on the narrowest phones', () => {
+  assert.equal(ticketSizes(layoutFor(1280, 800)).opFont, 24);
+  assert.equal(ticketSizes(layoutFor(427, 952)).opFont, 24);
+  assert.equal(ticketSizes(layoutFor(952, 427)).opFont, 24);
+  assert.equal(ticketSizes(layoutFor(320, 640)).opFont, 20);
+});

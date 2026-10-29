@@ -158,8 +158,8 @@ function PaperTicket({ visit, token, sizes }: { visit: VisitView; token: KioskTo
         <View style={sizes.topRow ? styles.paperTop : styles.paperTopStacked}>
           <View style={sizes.topRow ? styles.topCell : undefined}>
             <Text style={styles.caption}>{strings.ticket.opNumber}</Text>
-            {/* Never cut short: on the narrowest phones it shrinks a little instead. */}
-            <Text style={styles.opNumber} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+            {/* Never cut short: on the narrowest phones a smaller size (not adjustsFontSizeToFit, which stayed tiny after a rotation). */}
+            <Text style={[styles.opNumber, { fontSize: sizes.opFont, lineHeight: sizes.opFont + 6 }]} numberOfLines={1}>
               {visit.opNumber ?? ''}
             </Text>
           </View>
