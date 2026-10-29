@@ -137,10 +137,10 @@ export default function Payment() {
             <MaterialCommunityIcons name="stethoscope" size={compact ? 30 : 40} color={colors.primaryDark} />
           </View>
           <View style={styles.summaryText}>
-            <Text style={[styles.doctor, compact && styles.doctorCompact]} numberOfLines={compact ? 2 : 1}>
+            <Text style={[styles.doctor, compact && styles.doctorCompact]} numberOfLines={2}>
               {strings.payment.doctorLine(visit.doctor.name, visit.doctor.department)}
             </Text>
-            <Text style={[styles.patient, compact && styles.patientCompact]} numberOfLines={compact ? 2 : 1}>
+            <Text style={[styles.patient, compact && styles.patientCompact]} numberOfLines={2}>
               {strings.payment.patient(patient?.name ?? visit.patient.name, patient?.uhid ?? visit.patient.uhid)}
             </Text>
           </View>
