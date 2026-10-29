@@ -44,9 +44,13 @@ export async function loadKioskConfig(): Promise<StoredKioskConfig | null> {
 
 export const saveKioskConfig = (config: StoredKioskConfig): Promise<void> => SecureStore.setItemAsync(CONFIG_KEY, JSON.stringify(config));
 
-/** Forget the key but keep the address, so the setup screen is half filled in. */
-export async function clearKioskKey(): Promise<void> {
+/**
+ * Forget the key but keep the address (a kiosk that was set up once never gets the open form
+ * back). With `only`, the key goes only if it is still that one: a newer key stays.
+ */
+export async function clearKioskKey(only?: StoredKioskConfig): Promise<void> {
   const stored = await readJson<Partial<StoredKioskConfig>>(CONFIG_KEY);
+  if (only && !(stored?.apiUrl === only.apiUrl && stored.key === only.key)) return;
   if (stored?.apiUrl) await SecureStore.setItemAsync(CONFIG_KEY, JSON.stringify({ apiUrl: stored.apiUrl, key: '' }));
   else await SecureStore.deleteItemAsync(CONFIG_KEY);
 }

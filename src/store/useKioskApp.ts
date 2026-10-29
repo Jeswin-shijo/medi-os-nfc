@@ -12,6 +12,7 @@ import {
 } from '../config/kioskConfigStore';
 import { serverSkewMs } from '../flow/visitPolling';
 import { strings } from '../i18n/strings';
+import { loadFailureUpdate } from './loadFailure';
 import { shouldClearRevokedKey } from './revoked';
 
 type Status = 'loading' | 'unconfigured' | 'offline' | 'ready';
@@ -54,7 +55,7 @@ export const useKioskApp = create<KioskAppState>((set, get) => {
     // A late answer to an old request (before staff changed the key or server) must not wipe the new key.
     const stored = await loadKioskConfig().catch(() => null);
     if (!shouldClearRevokedKey(stored, revoked)) return;
-    await clearKioskKey().catch(() => undefined);
+    await clearKioskKey(revoked).catch(() => undefined);
     set({ status: 'unconfigured', config: null, client: null, api: null, notice: strings.errors.revoked, address: revoked.apiUrl });
   }
 
@@ -85,8 +86,8 @@ export const useKioskApp = create<KioskAppState>((set, get) => {
         await open(stored);
       } catch (err) {
         // A revoked key already moved the state to setup (see watchedClient).
-        if (err instanceof KioskApiError && err.code === 'NETWORK') set({ status: 'offline', loadError: err.message });
-        else if (get().status !== 'unconfigured') set({ status: 'offline', loadError: err instanceof Error ? err.message : strings.errors.generic });
+        const update = loadFailureUpdate(stored, err, get().status);
+        if (update) set(update);
       }
     },
 

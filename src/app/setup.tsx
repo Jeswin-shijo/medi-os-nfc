@@ -9,11 +9,11 @@ import { useStaffSession } from '../staff/useStaffSession';
 import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts } from '../theme/tokens';
 
-function RemovedNotice() {
+function RemovedNotice({ title }: { title: string }) {
   return (
     <View style={styles.removed}>
       <Text style={styles.removedTitle} accessibilityRole="header">
-        {strings.errors.revoked}
+        {title}
       </Text>
       <Text style={styles.removedHint}>{strings.offline.staffHint}</Text>
     </View>
@@ -63,9 +63,10 @@ export default function SetupScreen() {
     }
   }, [decision, link, holdLink, router]);
 
-  if (decision === 'confirm-with-staff' || decision === 'staff') return null;
+  // Never blank: when staff sign-in is not reachable (no stored server), say so instead.
+  if (decision === 'confirm-with-staff' || decision === 'staff') return hasServer ? null : <RemovedNotice title={strings.offline.title} />;
   // Key removed: no open form. Staff hold the logo, sign in, and set a new key from Kiosk setup.
-  if (decision === 'removed') return <RemovedNotice />;
+  if (decision === 'removed') return <RemovedNotice title={strings.errors.revoked} />;
   // The open form is for a fresh install only.
 
   return (
