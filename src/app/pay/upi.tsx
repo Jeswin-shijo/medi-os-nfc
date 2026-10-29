@@ -1,0 +1,136 @@
+import { Redirect } from 'expo-router';
+import { useState } from 'react';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { usePayWaiting } from '../../flow/usePayWaiting';
+import { useFlow } from '../../flow/useFlow';
+import { MAX_WAIT_SECONDS, secondsLeft } from '../../flow/visitPolling';
+import { strings } from '../../i18n/strings';
+import { Enter } from '../../motion/Enter';
+import { colors, fonts, methodColors, radii, shadows, sizes, spacing, typography } from '../../theme/tokens';
+import { Button } from '../../ui/Button';
+import { formatClock, useCountdown } from '../../ui/Countdown';
+import { ClosedPanel, ReconnectNote } from '../../ui/PayParts';
+import { QrView } from '../../ui/QrView';
+import { RingCountdown } from '../../ui/RingCountdown';
+import { SampleStrip } from '../../ui/SampleStrip';
+import { WaitingDots } from '../../ui/StatusPanel';
+import { useKioskApp } from '../../store/useKioskApp';
+
+const MAX_CONTENT_WIDTH = 1480;
+/** Header (96) + step tracker (60) + the screen's own padding, so the ring fits any tablet height. */
+const CHROME = 250;
+const RING_STROKE = 12;
+
+/** Step 6, UPI: the QR inside a ring that empties as the order runs out. The server decides when it is paid. */
+export default function PayUpi() {
+  const visit = useFlow((s) => s.visit);
+  if (!visit || visit.method !== 'UPI' || !visit.upiUri || visit.status !== 'awaiting-payment') {
+    return <Redirect href={visit ? '/payment' : '/'} />;
+  }
+  return <UpiScreen key={visit.expiresAt} visitId={visit.id} upiUri={visit.upiUri} expiresAt={visit.expiresAt} fee={visit.fee} />;
+}
+
+function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUri: string; expiresAt: string; fee: number }) {
+  const { height } = useWindowDimensions();
+  const sample = useKioskApp((s) => s.config?.sample.payments === true);
+  const { closed, reconnecting, simulating, simulateFailed, simulate, chooseAnother } = usePayWaiting(visitId);
+  // Fixed per order (the screen is keyed by it): a new value would restart the ring.
+  const [seconds] = useState(() => secondsLeft(expiresAt, Date.now(), MAX_WAIT_SECONDS.UPI));
+  const left = useCountdown(seconds);
+
+  if (closed) return <ClosedPanel status={closed.status} />;
+
+  const ring = Math.round(Math.min(620, Math.max(380, height - CHROME)));
+  // The QR's corners must stay inside the ring: side ≤ (inner diameter) / √2.
+  const qr = Math.floor((ring - 2 * RING_STROKE - 8) / Math.SQRT2);
+  const over = left === 0;
+
+  return (
+    <View style={styles.screen}>
+      <Enter style={styles.ringSlot}>
+        <RingCountdown seconds={seconds} total={MAX_WAIT_SECONDS.UPI} size={ring} strokeWidth={RING_STROKE} color={methodColors.UPI} trackColor="#D7F2E5">
+          <QrView value={upiUri} size={qr} accessibilityLabel={strings.upi.qrLabel(fee)} />
+        </RingCountdown>
+      </Enter>
+
+      <View style={styles.side}>
+        <Enter index={1}>
+          <Text style={styles.title} accessibilityRole="header">
+            {strings.upi.title(fee)}
+          </Text>
+        </Enter>
+
+        <Enter index={2} style={styles.steps}>
+          {strings.upi.steps.map((step, i) => (
+            <View key={step} style={styles.step}>
+              <View style={styles.stepNo}>
+                <Text style={styles.stepNoText}>{i + 1}</Text>
+              </View>
+              <Text style={styles.stepText}>{step}</Text>
+            </View>
+          ))}
+        </Enter>
+
+        <Enter index={3} style={styles.status} >
+          <View style={styles.waiting} accessibilityLiveRegion="polite">
+            <WaitingDots color={methodColors.UPI} />
+            <Text style={styles.waitingText}>{over ? strings.pay.checking : strings.pay.waiting}</Text>
+          </View>
+          <View style={styles.clock}>
+            <Text style={styles.clockLabel}>{strings.pay.timeLeft}</Text>
+            <Text style={styles.clockValue}>{formatClock(left)}</Text>
+          </View>
+          <ReconnectNote visible={reconnecting} />
+        </Enter>
+
+        <Enter index={4} style={styles.controls}>
+          {sample ? (
+            <>
+              <SampleStrip text={strings.upi.sampleStrip} />
+              <Button
+                label={strings.upi.simulate}
+                variant="success"
+                icon="check-decagram"
+                loading={simulating}
+                disabled={simulating}
+                onPress={simulate}
+              />
+              {simulateFailed ? <Text style={styles.simError}>{strings.pay.simulateFailed}</Text> : null}
+            </>
+          ) : null}
+          <Button label={strings.pay.chooseAnother} variant="secondary" icon="swap-horizontal" disabled={simulating} onPress={chooseAnother} />
+        </Enter>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    width: '100%',
+    maxWidth: MAX_CONTENT_WIDTH,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+    paddingHorizontal: sizes.screenGutter,
+    paddingVertical: spacing.md,
+  },
+  ringSlot: { alignItems: 'center', justifyContent: 'center' },
+  side: { flex: 1, gap: spacing.lg, justifyContent: 'center' },
+  title: { ...typography.hero, color: colors.textPrimary },
+  steps: { gap: 12 },
+  step: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  stepNo: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#D7F2E5' },
+  stepNoText: { fontFamily: fonts.bold, fontSize: 20, color: methodColors.UPI },
+  stepText: { ...typography.bodyLarge, color: colors.textSecondary },
+  status: { gap: 12 },
+  waiting: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 20, paddingVertical: 14, borderRadius: radii.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, boxShadow: shadows.card },
+  waitingText: { ...typography.label, color: colors.textPrimary, flexShrink: 1 },
+  clock: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },
+  clockLabel: { ...typography.caption, color: colors.textSecondary },
+  clockValue: { fontFamily: fonts.bold, fontSize: 34, lineHeight: 42, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
+  controls: { gap: 12 },
+  simError: { ...typography.caption, color: colors.dangerStrong },
+});
