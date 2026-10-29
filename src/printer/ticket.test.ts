@@ -8,7 +8,7 @@ const token: KioskTokenView = {
   label: 'G-024',
   status: 'waiting',
   ahead: 3,
-  room: '101',
+  room: 'Room 101',
   doctorName: 'Dr. Shajin',
   department: 'General Medicine',
   trackCode: 'K7Q2M9',
@@ -22,7 +22,7 @@ const visit: VisitView = {
   method: 'UPI',
   fee: 300,
   sample: false,
-  doctor: { id: 'd1', name: 'Dr. Shajin', department: 'General Medicine', room: '101' },
+  doctor: { id: 'd1', name: 'Dr. Shajin', department: 'General Medicine', room: 'Room 101' },
   patient: { name: 'Ramesh Kumar', uhid: 'MHK202600003' },
   expiresAt: '2026-09-26T05:00:00.000Z',
   paidAt: '2026-09-26T04:54:00.000Z',
@@ -77,6 +77,13 @@ describe('ticketPreviewLines', () => {
     assert.ok(lines.some((l) => l.trim() === 'Please wait for your token number. Thank you!'));
   });
 
+  it('prints the room as the hospital names it, never "Room Room"', () => {
+    assert.ok(!lines.some((l) => l.includes('Room Room')));
+    const shared = ticketPreviewLines({ ...input, visit: { ...visit, token: { ...token, room: 'Consultation Room' } } });
+    assert.ok(shared.some((l) => l.trim() === 'Consultation Room - Dr. Shajin'));
+    assert.ok(!shared.some((l) => l.includes('Room Consultation')));
+  });
+
   it('wraps a long value under its value column', () => {
     const long = ticketPreviewLines({
       ...input,
@@ -118,6 +125,13 @@ describe('buildTicket', () => {
     const bytes = buildTicket(input).bytes();
     assert.deepEqual([...bytes.slice(0, 2)], [0x1b, 0x40]);
     assert.deepEqual([...bytes.slice(-4)], [0x1d, 0x56, 0x42, 0x00]);
+  });
+
+  it('cuts straight after the footer: GS V 66 feeds to the cutter itself, so no extra feed wastes paper', () => {
+    const bytes = buildTicket(input).bytes();
+    const footerEnd = bytes.length - 4;
+    assert.equal(bytes[footerEnd - 1], 0x0a, 'the footer line ends right before the cut');
+    assert.ok(!bytes.some((b, i) => b === 0x1b && bytes[i + 1] === 0x64), 'no ESC d (print and feed n lines)');
   });
 
   it('prints the token double size', () => {

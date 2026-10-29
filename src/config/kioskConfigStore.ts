@@ -5,9 +5,21 @@ export interface StoredKioskConfig {
   key: string;
 }
 
+/**
+ * The USB printer staff chose, as the printer itself reports it. Android gives a device a new id
+ * on every re-plug and reboot, so the printer is found again by these, never by that id.
+ */
+export interface UsbPrinterIdentity {
+  vendorId: number;
+  productId: number;
+  /** Readable once the kiosk may use the printer; tells two printers of one model apart. */
+  serial?: string;
+}
+
 export interface PrinterSettings {
   transport: 'usb' | 'network';
-  usbDeviceId?: number;
+  /** USB: the chosen printer. None saved: the one printer-class device, when exactly one is connected. */
+  usbPrinter?: UsbPrinterIdentity;
   host?: string;
   port?: number;
 }

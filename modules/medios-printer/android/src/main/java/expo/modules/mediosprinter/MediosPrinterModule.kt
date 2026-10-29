@@ -54,19 +54,23 @@ class MediosPrinterModule : Module() {
     AsyncFunction("listUsbPrinters") Coroutine { ->
       withContext(Dispatchers.IO) {
         val usb = usb
-        findPrinters(usb).map { port ->
-          mapOf(
+        listPrinters(usb).map { port ->
+          val allowed = usb.hasPermission(port.device)
+          mapOf<String, Any?>(
             "deviceId" to port.device.deviceId,
             "name" to displayName(port.device),
             "vendorId" to port.device.vendorId,
             "productId" to port.device.productId,
-            "hasPermission" to usb.hasPermission(port.device)
+            "hasPermission" to allowed,
+            "printerClass" to (port.iface.interfaceClass == UsbConstants.USB_CLASS_PRINTER),
+            // Android only shows the serial to an app it has allowed to use the device.
+            "serial" to if (allowed) runCatching { port.device.serialNumber }.getOrNull() else null
           )
         }
       }
     }
 
-    AsyncFunction("printUsb") Coroutine { deviceId: Int?, base64: String ->
+    AsyncFunction("printUsb") Coroutine { deviceId: Int, base64: String ->
       printUsb(deviceId, decode(base64))
     }
 
@@ -79,10 +83,11 @@ class MediosPrinterModule : Module() {
   private class PrinterPort(val device: UsbDevice, val iface: UsbInterface, val out: UsbEndpoint)
 
   /**
-   * Devices with a printer-class (7) interface. When there is none, any device with a bulk OUT
-   * endpoint: some cheap slip printers report a vendor-specific class.
+   * For the staff listing: devices with a printer-class (7) interface. When there is none, any
+   * device with a bulk OUT endpoint (some cheap slip printers report a vendor-specific class), each
+   * marked `printerClass: false`. Patients' slips only ever go to printer-class devices (`printUsb`).
    */
-  private fun findPrinters(usb: UsbManager): List<PrinterPort> {
+  private fun listPrinters(usb: UsbManager): List<PrinterPort> {
     val devices = usb.deviceList.values.sortedBy { it.deviceId }
     val printers = devices.mapNotNull { port(it, printerClassOnly = true) }
     return printers.ifEmpty { devices.mapNotNull { port(it, printerClassOnly = false) } }
@@ -107,13 +112,16 @@ class MediosPrinterModule : Module() {
       .trim()
       .ifEmpty { device.deviceName }
 
-  private suspend fun printUsb(deviceId: Int?, data: ByteArray) {
+  /**
+   * Prints to exactly this device, and only if it has a printer-class interface. Never picks
+   * another device: JavaScript finds the chosen printer's current id (`resolveUsbPrinter`).
+   */
+  private suspend fun printUsb(deviceId: Int, data: ByteArray) {
     val usb = usb
-    val printers = withContext(Dispatchers.IO) { findPrinters(usb) }
-    // Android gives a device a new id each time it is plugged in: when the chosen printer's id is
-    // gone (the printer was switched off and on), use the printer that is connected now.
-    val port = printers.firstOrNull { it.device.deviceId == deviceId } ?: printers.firstOrNull()
-      ?: throw PrinterNotFoundException("No USB printer is connected")
+    val device = usb.deviceList.values.firstOrNull { it.deviceId == deviceId }
+      ?: throw PrinterNotFoundException("The USB printer is not connected")
+    val port = port(device, printerClassOnly = true)
+      ?: throw PrinterNotFoundException("That USB device is not a printer")
     if (!usb.hasPermission(port.device) && !requestPermission(usb, port.device)) {
       throw UsbPermissionException()
     }
@@ -142,10 +150,16 @@ class MediosPrinterModule : Module() {
           context.registerReceiver(receiver, filter)
         }
         continuation.invokeOnCancellation { runCatching { context.unregisterReceiver(receiver) } }
-        // Explicit (package set) and mutable: Android fills in the answer's extras.
-        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
-        val intent = Intent(action).setPackage(context.packageName)
-        usb.requestPermission(device, PendingIntent.getBroadcast(context, 0, intent, flags))
+        try {
+          // Explicit (package set) and mutable: Android fills in the answer's extras.
+          val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+          val intent = Intent(action).setPackage(context.packageName)
+          usb.requestPermission(device, PendingIntent.getBroadcast(context, 0, intent, flags))
+        } catch (e: Exception) {
+          // The block threw, so no answer and no cancellation will ever unregister the receiver.
+          runCatching { context.unregisterReceiver(receiver) }
+          throw e
+        }
       }
     }
     return granted == true

@@ -277,7 +277,8 @@ export const strings = {
     tokenTitle: 'QUEUE TOKEN',
     phone: (phone: string) => `Phone: ${phone}`,
     opNumber: 'OP Number',
-    roomDoctor: (room: string, doctor: string) => [room ? `Room ${room}` : '', doctor].filter(Boolean).join(' - '),
+    /** Rooms already carry their own word ('Room 101', 'Consultation Room'). */
+    roomDoctor: (room: string, doctor: string) => [room, doctor].filter(Boolean).join(' - '),
     patientName: 'Patient Name',
     patientId: 'Patient ID',
     ageSex: 'Age / Sex',

@@ -3,7 +3,7 @@ import type { MediosPrinterApi, UsbPrinter } from './MediosPrinter.types';
 
 declare class MediosPrinterNative extends NativeModule implements MediosPrinterApi {
   listUsbPrinters(): Promise<UsbPrinter[]>;
-  printUsb(deviceId: number | null, base64: string): Promise<void>;
+  printUsb(deviceId: number, base64: string): Promise<void>;
   printNetwork(host: string, port: number, base64: string, timeoutMs: number): Promise<void>;
 }
 

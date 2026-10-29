@@ -9,8 +9,6 @@ const VALUE_INDENT = ' '.repeat(LABEL_WIDTH + 2);
 const VALUE_WIDTH = COLUMNS - VALUE_INDENT.length;
 /** The token prints double width and height. */
 const TOKEN_SCALE: Scale = 2;
-/** Blank lines after the footer, so it clears the cutter. */
-const FEED_BEFORE_CUT = 4;
 
 /** The identified patient. A visit carries only the name and ID, so age and sex come from here. */
 export interface TicketPatient {
@@ -133,7 +131,8 @@ export function buildTicket(input: TicketInput): EscPos {
       if (block.bold) p.bold(false);
     }
   }
-  return p.feed(FEED_BEFORE_CUT).cut();
+  // GS V 66 feeds the paper to the cutter by itself: no blank lines before it.
+  return p.cut();
 }
 
 const centred = (line: string): string => `${' '.repeat(Math.max(0, Math.floor((COLUMNS - line.length) / 2)))}${line}`;
