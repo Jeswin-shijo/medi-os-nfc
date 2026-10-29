@@ -36,7 +36,9 @@ export const SHORT_MAX_HEIGHT = 600;
 const GUTTER = { compact: 16, medium: 32, expanded: 40 } as const;
 const HEADER = { compact: 64, medium: 80, expanded: 96 } as const;
 const STEPPER = { compact: 48, medium: 56, expanded: 60 } as const;
+/** Phones in either orientation (compact, or short on its side) use the phone minimum of 56. */
 const TOUCH_MIN = { compact: 56, medium: 64, expanded: 64 } as const;
+const PHONE_TOUCH_MIN = 56;
 const TYPE = {
   compact: { title: 26, subtitle: 18, body: 18, label: 16 },
   medium: { title: 30, subtitle: 20, body: 19, label: 17 },
@@ -65,7 +67,7 @@ export function layoutFor(width: number, height: number): Layout {
     height,
     gutter: GUTTER[size],
     contentMax: size === 'expanded' ? CONTENT_MAX_EXPANDED : width,
-    touchMin: TOUCH_MIN[size],
+    touchMin: short || size === 'compact' ? PHONE_TOUCH_MIN : TOUCH_MIN[size],
     // A phone on its side has little height to give away.
     headerHeight: short ? Math.min(HEADER[size], HEADER.compact) : HEADER[size],
     stepperHeight: short ? Math.min(STEPPER[size], STEPPER.compact) : STEPPER[size],

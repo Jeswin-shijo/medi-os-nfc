@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { layoutFor } from './layout';
-import { contentWidth, fit, keyHeight, otpMetrics, padWidth, phoneMetrics, sideBySide } from './sizing';
+import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, phoneMetrics, sideBySide } from './sizing';
 
 test('fit keeps the tablet size where there is room and shrinks where there is not', () => {
   assert.equal(fit(460, 1200), 460);
@@ -29,7 +29,8 @@ test('a phone on its side sits side by side with a narrower pad and short keys',
   const l = layoutFor(844, 390);
   assert.equal(sideBySide(l), true);
   assert.ok(padWidth(l) <= 380);
-  assert.equal(keyHeight(l), 52);
+  assert.equal(keyHeight(l), 56);
+  assert.equal(l.touchMin, 56);
 });
 
 test('a portrait tablet stacks', () => {
@@ -52,4 +53,16 @@ test('code boxes are 72 wide on a tablet and shrink to fit a phone', () => {
   const m = otpMetrics(326);
   assert.ok(6 * m.boxWidth + 5 * m.gap <= 326);
   assert.ok(m.boxWidth >= 40);
+});
+
+test('the first-frame row width matches the tablet and fits a phone', () => {
+  assert.ok(Math.abs(entryRowWidth(layoutFor(1280, 800)) - 652) <= 2);
+  assert.equal(entryRowWidth(layoutFor(390, 844)), 326);
+});
+
+test('keys and phone touch targets are never under the layout minimum', () => {
+  for (const [w, h] of [[390, 844], [844, 390], [800, 1280], [1280, 800]] as const) {
+    const l = layoutFor(w, h);
+    assert.ok(keyHeight(l) >= l.touchMin, `${w}x${h}`);
+  }
 });

@@ -183,4 +183,5 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.warningBorder,
   },
-  messageText: { ...typography.caption, fontSize: 18, lineHeight: 24, color: colors.warningText, flexShrink: 1 },});
+  messageText: { ...typography.caption, fontSize: 18, lineHeight: 24, color: colors.warningText, flexShrink: 1 },
+});

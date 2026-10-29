@@ -22,8 +22,16 @@ export function padWidth(l: Layout): number {
 
 /** Height of one number key: tighter on a phone on its side. */
 export function keyHeight(l: Layout): number {
-  if (l.short) return 52;
+  if (l.short) return l.touchMin;
   return l.size === 'compact' ? 60 : l.size === 'medium' ? 72 : 80;
+}
+
+/** Best guess at the width of a number or code row before it is measured, so a phone never paints a tablet-sized row. */
+export function entryRowWidth(l: Layout): number {
+  const available = contentWidth(l);
+  const panelPadding = l.size === 'compact' ? 16 : 24;
+  const panel = sideBySide(l) ? available - padWidth(l) - 40 : available;
+  return Math.max(0, panel - 2 * panelPadding);
 }
 
 export interface PhoneMetrics {

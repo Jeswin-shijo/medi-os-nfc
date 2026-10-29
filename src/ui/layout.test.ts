@@ -18,7 +18,7 @@ test('phone on its side is medium and short', () => {
   const l = layoutFor(844, 390);
   assert.equal(l.size, 'medium');
   assert.equal(l.short, true);
-  assert.equal(l.touchMin, 64);
+  assert.equal(l.touchMin, 56);
 });
 
 test('tablet upright is medium', () => {

@@ -16,7 +16,8 @@ import Animated, {
 import { strings } from '../i18n/strings';
 import { easeOut } from '../motion/curves';
 import { colors, fonts, motion, radii } from '../theme/tokens';
-import { otpMetrics, type OtpMetrics } from './sizing';
+import { entryRowWidth, otpMetrics, type OtpMetrics } from './sizing';
+import { useLayout } from './useLayout';
 import { useShake } from './Shake';
 
 export type OtpStatus = 'idle' | 'error' | 'success';
@@ -34,8 +35,9 @@ interface OtpBoxesProps {
  */
 export function OtpBoxes({ value, length = 6, status = 'idle' }: OtpBoxesProps) {
   const { style: shakeStyle, shake } = useShake();
-  // Until measured, the tablet sizes (the row has its width a frame later).
-  const [rowWidth, setRowWidth] = useState(600);
+  // Until measured (a frame later), the width the layout expects.
+  const layout = useLayout();
+  const [rowWidth, setRowWidth] = useState(() => entryRowWidth(layout));
   const m = otpMetrics(rowWidth, length);
   useEffect(() => {
     if (status === 'error') shake();

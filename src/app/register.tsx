@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion, useReducedMotion, ZoomIn } from 'react-native-reanimated';
 import { KioskApiError } from '../api/client';
 import type { RegisterInput } from '../api/types';
@@ -151,7 +151,7 @@ export default function Register() {
 
   return (
     // Phones and small tablets show the keyboard over the form: the Screen scrolls and the form lifts above it.
-    <KeyboardAvoidingView style={styles.avoid} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.avoid} behavior="padding">
       <Screen>
         <StepTitle title={strings.register.title} subtitle={strings.register.subtitle} />
 

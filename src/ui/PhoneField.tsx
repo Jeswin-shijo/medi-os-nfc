@@ -5,7 +5,8 @@ import { strings } from '../i18n/strings';
 import { formatIndianMobile } from '../lib/phone';
 import { easeOut } from '../motion/curves';
 import { colors, fonts, motion, radii } from '../theme/tokens';
-import { phoneMetrics } from './sizing';
+import { entryRowWidth, phoneMetrics } from './sizing';
+import { useLayout } from './useLayout';
 
 interface PhoneFieldProps {
   /** Up to ten digits. */
@@ -15,8 +16,9 @@ interface PhoneFieldProps {
 /** The "+91" chip and a read-only number shown as ten cells (5 + 5), sized to the row it is in. Each digit pops in as it is entered. */
 export function PhoneField({ digits }: PhoneFieldProps) {
   const reduced = useReducedMotion();
-  // Until measured, the tablet sizes (the row has its width a frame later).
-  const [rowWidth, setRowWidth] = useState(652);
+  // Until measured (a frame later), the width the layout expects.
+  const layout = useLayout();
+  const [rowWidth, setRowWidth] = useState(() => entryRowWidth(layout));
   const m = phoneMetrics(rowWidth);
   const entering = reduced
     ? FadeIn.duration(motion.duration.fast).reduceMotion(ReduceMotion.Never)

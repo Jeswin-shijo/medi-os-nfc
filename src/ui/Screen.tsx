@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from '../theme/tokens';
@@ -9,11 +9,14 @@ import { useLayout } from './useLayout';
  * and a scroll view so a short window (a phone on its side, a keyboard up) scrolls instead of clipping.
  * Children with `flex: 1` fill the window when there is room; give them a `minHeight` for when there is not.
  */
-export function Screen({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Screen({ children, style, resetKey }: { children: ReactNode; style?: StyleProp<ViewStyle>; /** Scrolls back to the top when this changes. */ resetKey?: unknown }) {
   const layout = useLayout();
+  const scroll = useRef<ScrollView>(null);
+  useEffect(() => scroll.current?.scrollTo({ y: 0, animated: false }), [resetKey]);
   const insets = useSafeAreaInsets();
   return (
     <ScrollView
+      ref={scroll}
       style={{ flex: 1 }}
       contentContainerStyle={[
         {

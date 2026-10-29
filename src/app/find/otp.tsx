@@ -256,4 +256,5 @@ const styles = StyleSheet.create({
   // Resend and Change number wrap onto two lines on a narrow phone.
   resendRowCompact: { flexWrap: 'wrap', justifyContent: 'center' },
   waiting: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: sizes.touchMin },
-  waitingText: { ...typography.body, color: colors.textSecondary, fontVariant: ['tabular-nums'] },});
+  waitingText: { ...typography.body, color: colors.textSecondary, fontVariant: ['tabular-nums'] },
+});

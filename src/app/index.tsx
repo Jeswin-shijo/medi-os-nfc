@@ -179,7 +179,7 @@ export default function Welcome() {
   return (
     <View style={styles.screen}>
       {cardReader}
-      <Screen>
+      <Screen resetKey={round}>
         <Fragment key={round}>
           <View style={styles.intro}>
             <Enter>
