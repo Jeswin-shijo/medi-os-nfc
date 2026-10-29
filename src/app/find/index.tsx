@@ -1,10 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion } from 'react-native-reanimated';
 import { KioskApiError } from '../../api/client';
 import { useFind } from '../../flow/useFind';
+import { useRequestGuard } from '../../flow/useRequestGuard';
 import { strings } from '../../i18n/strings';
 import { isValidIndianMobile } from '../../lib/phone';
 import { Enter } from '../../motion/Enter';
@@ -22,7 +23,8 @@ import { useShake } from '../../ui/Shake';
 export default function FindMobile() {
   const api = useKioskApp((s) => s.api);
   const notice = useFind((s) => s.notice);
-  const [digits, setDigits] = useState(() => useFind.getState().phone);
+  const digits = useFind((s) => s.phone);
+  const begin = useRequestGuard();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -32,22 +34,26 @@ export default function FindMobile() {
   const valid = isValidIndianMobile(digits);
   const message = error ?? notice;
 
-  const change = useCallback((next: string) => {
-    setDigits(next);
-    setError(null);
+  // Entered fresh from Welcome: nobody else's number. Only the Register hand-off may bring one.
+  useEffect(() => useFind.getState().enter(), []);
+
+  const change = (next: string) => {
+    useFind.getState().setPhone(next);
     useFind.getState().setNotice(null);
-  }, []);
+    setError(null);
+  };
 
   const send = async () => {
     // One code per tap: a double tap must not send two SMS.
     if (!api || !valid || inFlight.current) return;
     inFlight.current = true;
+    const stale = begin();
     setSending(true);
     setError(null);
     useFind.getState().setNotice(null);
     try {
       const result = await api.sendOtp(digits);
-      useFind.getState().setPhone(digits);
+      if (stale()) return;
       if (!result.found) {
         setNotFound(true);
         return;
@@ -56,13 +62,13 @@ export default function FindMobile() {
       router.push('/find/otp');
     } catch (err) {
       // A removed kiosk key has already sent the kiosk to its setup screen.
-      if (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED') return;
+      if (stale() || (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED')) return;
       feedback.error();
       shake();
       setError(err instanceof Error && err.message ? err.message : strings.errors.generic);
     } finally {
       inFlight.current = false;
-      setSending(false);
+      if (!stale()) setSending(false);
     }
   };
 
@@ -74,13 +80,19 @@ export default function FindMobile() {
           icon="account-search-outline"
           title={strings.find.notFound.title}
           body={strings.find.notFound.body}
-          primary={{ label: strings.find.notFound.register, icon: 'account-plus-outline', onPress: () => router.push('/register') }}
+          primary={{
+            label: strings.find.notFound.register,
+            icon: 'account-plus-outline',
+            onPress: () => {
+              useFind.getState().handOff(digits);
+              router.push('/register');
+            },
+          }}
           secondary={{
             label: strings.find.notFound.tryAnother,
             icon: 'cellphone-text',
             onPress: () => {
               change('');
-              useFind.getState().setPhone('');
               setNotFound(false);
             },
           }}

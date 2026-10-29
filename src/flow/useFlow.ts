@@ -46,6 +46,9 @@ const RESET_FADE_MS = 400;
 /** Counts resets and new patients, so a late clean-up never wipes a patient who started meanwhile. */
 let generation = 0;
 
+/** For `useRequestGuard`: which patient (or reset) the kiosk is on right now. */
+export const currentGeneration = (): number => generation;
+
 export const useFlow = create<FlowState>((set, get) => ({
   ...EMPTY,
   resetting: false,

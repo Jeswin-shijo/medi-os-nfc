@@ -7,6 +7,7 @@ import { KioskApiError } from '../../api/client';
 import type { IdentifyResult } from '../../api/types';
 import { useFind } from '../../flow/useFind';
 import { useFlow } from '../../flow/useFlow';
+import { useRequestGuard } from '../../flow/useRequestGuard';
 import { strings } from '../../i18n/strings';
 import { formatIndianMobile } from '../../lib/phone';
 import { Enter } from '../../motion/Enter';
@@ -36,7 +37,9 @@ const nextRoute = (result: IdentifyResult) => (result.activeToken ? '/has-token'
 export default function FindOtp() {
   const api = useKioskApp((s) => s.api);
   const sampleSms = useKioskApp((s) => s.config?.sample.sms === true);
-  const phone = useFind((s) => s.phone);
+  // Read once: Change mobile number clears the store, and this screen is only leaving then.
+  const [phone] = useState(() => useFind.getState().phone);
+  const begin = useRequestGuard();
   const sampleCode = useFind((s) => s.sampleCode);
   const initialWait = useFind((s) => s.resendAfterSeconds);
   const [code, setCode] = useState('');
@@ -58,15 +61,19 @@ export default function FindOtp() {
       // One check at a time: the last digit tapped twice must not verify twice.
       if (!api || inFlight.current) return;
       inFlight.current = true;
+      const stale = begin();
       setBusy(true);
       setProblem(null);
       setResendNote(null);
       try {
         const { patients } = await api.verifyOtp(phone, entered);
+        // Answered after the screen closed or the kiosk started over: it belongs to nobody now.
+        if (stale()) return;
         if (patients.length === 0) throw new KioskApiError(strings.errors.generic, 200, 'HTTP');
         setStatus('success');
         feedback.success();
         timer.current = setTimeout(() => {
+          if (stale()) return;
           if (patients.length === 1) {
             useFlow.getState().setIdentity(patients[0]!, 'otp');
             router.push(nextRoute(patients[0]!));
@@ -77,7 +84,7 @@ export default function FindOtp() {
         }, SUCCESS_HOLD_MS);
       } catch (err) {
         // A removed kiosk key has already sent the kiosk to its setup screen.
-        if (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED') return;
+        if (stale() || (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED')) return;
         if (err instanceof KioskApiError && err.code === 'OTP_EXPIRED') {
           // Back to the mobile number screen, which says so and lets them ask again.
           useFind.getState().setNotice(err.message || strings.find.otp.expired);
@@ -95,26 +102,28 @@ export default function FindOtp() {
         }, ERROR_HOLD_MS);
       } finally {
         inFlight.current = false;
-        setBusy(false);
+        if (!stale()) setBusy(false);
       }
     },
-    [api, phone],
+    [api, phone, begin],
   );
 
   const resend = async () => {
     if (!api || inFlight.current) return;
     inFlight.current = true;
+    const stale = begin();
     setResending(true);
     setProblem(null);
     try {
       const result = await api.sendOtp(phone);
+      if (stale()) return;
       useFind.getState().setCode({ sampleCode: result.sampleCode, resendAfterSeconds: result.resendAfterSeconds });
       restartCountdown(result.resendAfterSeconds);
       setCode('');
       setStatus('idle');
       setResendNote(strings.find.otp.resent);
     } catch (err) {
-      if (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED') return;
+      if (stale() || (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED')) return;
       feedback.error();
       setProblem(err instanceof Error && err.message ? err.message : strings.errors.generic);
       // "Please wait 12 seconds": the server says how long.
@@ -123,8 +132,14 @@ export default function FindOtp() {
       }
     } finally {
       inFlight.current = false;
-      setResending(false);
+      if (!stale()) setResending(false);
     }
+  };
+
+  const changeNumber = () => {
+    // Leaving this number behind: the next screen starts empty.
+    useFind.getState().clear();
+    router.back();
   };
 
   const restartCountdown = (seconds: number) => {
@@ -174,7 +189,7 @@ export default function FindOtp() {
             ) : (
               <ResendWait key={round} seconds={wait} onDone={() => setCanResend(true)} />
             )}
-            <Button label={strings.find.otp.changeNumber} variant="quiet" icon="cellphone-text" disabled={busy} onPress={() => router.back()} />
+            <Button label={strings.find.otp.changeNumber} variant="quiet" icon="cellphone-text" disabled={busy} onPress={changeNumber} />
           </View>
         </Enter>
 

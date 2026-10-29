@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect, router } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { IdentifyResult } from '../../api/types';
 import { useFind } from '../../flow/useFind';
@@ -14,7 +15,8 @@ import { StepTitle } from '../../ui/StepTitle';
 
 /** Find my record, step 3 (only when several people share the number): who is visiting today? */
 export default function FindChoose() {
-  const candidates = useFind((s) => s.candidates);
+  // Read once: choosing (or None of these) clears the store while this screen is still leaving.
+  const [candidates] = useState(() => useFind.getState().candidates);
   if (candidates.length === 0) return <Redirect href="/find" />;
 
   const pick = (result: IdentifyResult) => {
@@ -22,6 +24,12 @@ export default function FindChoose() {
     // Everyone else on the number is forgotten the moment one person is chosen.
     useFind.getState().setCandidates([]);
     router.push(result.activeToken ? '/has-token' : '/patient');
+  };
+
+  const none = () => {
+    // Not one of them: nothing of this number or its family stays on the screen.
+    useFind.getState().clear();
+    router.dismissTo('/find');
   };
 
   return (
@@ -35,7 +43,7 @@ export default function FindChoose() {
         ))}
       </ScrollView>
       <Enter index={candidates.length + 1} style={styles.actions}>
-        <Button label={strings.find.choose.none} variant="secondary" size="large" icon="account-remove-outline" onPress={() => router.dismissTo('/find')} />
+        <Button label={strings.find.choose.none} variant="secondary" size="large" icon="account-remove-outline" onPress={none} />
       </Enter>
     </View>
   );

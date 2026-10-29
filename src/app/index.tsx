@@ -19,7 +19,9 @@ import Animated, {
 import Svg, { Rect } from 'react-native-svg';
 import { KioskApiError } from '../api/client';
 import { useCardTap } from '../card/useCardTap';
-import { useFlow } from '../flow/useFlow';
+import { useFind } from '../flow/useFind';
+import { currentGeneration, useFlow } from '../flow/useFlow';
+import { useRequestGuard } from '../flow/useRequestGuard';
 import { strings } from '../i18n/strings';
 import { easeOut } from '../motion/curves';
 import { Enter } from '../motion/Enter';
@@ -63,6 +65,7 @@ export default function Welcome() {
   const leaveTimer = useRef<Timer>(undefined);
   const shownBefore = useRef(false);
   const inFlight = useRef(false);
+  const begin = useRequestGuard();
 
   useEffect(
     () => () => {
@@ -76,6 +79,8 @@ export default function Welcome() {
   // Back on Welcome for the next patient: a fresh screen, and the tiles enter again.
   useFocusEffect(
     useCallback(() => {
+      // Back on Welcome by any route (Back included): no number or family list of the last person stays.
+      useFind.getState().clear();
       if (shownBefore.current) {
         clearTimeout(noticeTimer.current);
         clearTimeout(hintTimer.current);
@@ -100,19 +105,32 @@ export default function Welcome() {
       // stops listening, must not both identify and navigate.
       if (!api || inFlight.current) return;
       inFlight.current = true;
+      const stale = begin();
       clearTimeout(hintTimer.current);
       setHint(false);
       setNotice(null);
       setPhase('reading');
       try {
         const result = await api.identifyCard(cardId);
+        // Answered after the kiosk started over: the card belongs to someone who has left.
+        if (stale()) {
+          setPhase('idle');
+          return;
+        }
         useFlow.getState().setIdentity(result, 'card');
+        const generation = currentGeneration();
         setPhase('found');
         feedback.success();
         clearTimeout(leaveTimer.current);
-        leaveTimer.current = setTimeout(() => router.push(result.activeToken ? '/has-token' : '/patient'), BURST_MS);
+        leaveTimer.current = setTimeout(() => {
+          if (currentGeneration() === generation) router.push(result.activeToken ? '/has-token' : '/patient');
+        }, BURST_MS);
       } catch (err) {
         // A removed kiosk key has already sent the kiosk to its setup screen.
+        if (stale()) {
+          setPhase('idle');
+          return;
+        }
         if (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED') return;
         setPhase('idle');
         feedback.error();
@@ -125,7 +143,7 @@ export default function Welcome() {
         inFlight.current = false;
       }
     },
-    [api, findByPhone, shake, showNotice],
+    [api, begin, findByPhone, shake, showNotice],
   );
 
   const cardReader = useCardTap(identify, ready && phase === 'idle');

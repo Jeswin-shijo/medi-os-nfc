@@ -1,15 +1,16 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion, useReducedMotion, ZoomIn } from 'react-native-reanimated';
 import { KioskApiError } from '../api/client';
 import type { RegisterInput } from '../api/types';
 import { useFind } from '../flow/useFind';
 import { useFlow } from '../flow/useFlow';
+import { useRequestGuard } from '../flow/useRequestGuard';
 import { markActive } from '../flow/useInactivity';
 import { strings } from '../i18n/strings';
-import { parseDob } from '../lib/dob';
+import { MAX_AGE, parseDob } from '../lib/dob';
 import { formatIndianMobile, isValidIndianMobile } from '../lib/phone';
 import { Enter } from '../motion/Enter';
 import { feedback } from '../motion/feedback';
@@ -34,7 +35,10 @@ const digitsOnly = (text: string, max: number) => text.replace(/\D/g, '').slice(
 export default function Register() {
   const api = useKioskApp((s) => s.api);
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState(() => useFind.getState().phone);
+  // Only the Find my record "not found" hand-off brings a number; a fresh start from Welcome is empty.
+  const [phone, setPhone] = useState(() => (useFind.getState().handoff ? useFind.getState().phone : ''));
+  const begin = useRequestGuard();
+  useEffect(() => useFind.getState().enter(), []);
   const [gender, setGender] = useState<Gender | null>(null);
   const [byDob, setByDob] = useState(false);
   const [age, setAge] = useState('');
@@ -54,7 +58,7 @@ export default function Register() {
 
   const dob = byDob ? parseDob(day, month, year) : null;
   const ageNumber = age === '' ? null : Number(age);
-  const ageOk = ageNumber !== null && ageNumber >= 0 && ageNumber <= 120;
+  const ageOk = ageNumber !== null && ageNumber >= 0 && ageNumber <= MAX_AGE;
   const phoneOk = isValidIndianMobile(phone);
   const valid = name.trim().length >= 2 && phoneOk && gender !== null && (byDob ? dob !== null : ageOk);
 
@@ -69,6 +73,7 @@ export default function Register() {
     // One patient per tap: a double tap must not create two records.
     if (!api || !valid || !gender || inFlight.current) return;
     inFlight.current = true;
+    const stale = begin();
     setBusy(true);
     setError(null);
     try {
@@ -79,12 +84,14 @@ export default function Register() {
         ...(byDob && dob ? { dob } : { age: ageNumber ?? undefined }),
         ...(confirmNew ? { confirmNew: true } : {}),
       });
+      // Answered after the screen closed or the kiosk started over: do not sign the next person in.
+      if (stale()) return;
       useFlow.getState().setIdentity(result, 'register');
       feedback.success();
       router.push('/department');
     } catch (err) {
       // A removed kiosk key has already sent the kiosk to its setup screen.
-      if (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED') return;
+      if (stale() || (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED')) return;
       if (err instanceof KioskApiError && err.code === 'PHONE_HAS_RECORDS') {
         setHasRecords(true);
         return;
@@ -94,7 +101,7 @@ export default function Register() {
       setError(err instanceof Error && err.message ? err.message : strings.errors.generic);
     } finally {
       inFlight.current = false;
-      setBusy(false);
+      if (!stale()) setBusy(false);
     }
   };
 
@@ -110,7 +117,7 @@ export default function Register() {
             label: strings.register.hasRecords.find,
             icon: 'cellphone-message',
             onPress: () => {
-              useFind.getState().setPhone(phone);
+              useFind.getState().handOff(phone);
               router.replace('/find');
             },
           }}
