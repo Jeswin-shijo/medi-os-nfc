@@ -20,6 +20,19 @@ export function padWidth(l: Layout): number {
   return l.size === 'expanded' ? 460 : fit(380, Math.round(available * 0.42));
 }
 
+/** A row tile narrower than this uses the tighter phone metrics (smaller icon and padding), so its text fits. */
+export const ROW_TILE_DENSE_MAX = 440;
+
+/**
+ * Whether Welcome's Find my record and New patient tiles are dense: side by side with the card tile they
+ * get 10/21 of the row (minus the 24 dp gap), which is under 440 dp on a tablet upright, a phone on its side
+ * and a small tablet. A phone upright stacks them full width with the compact tile already.
+ */
+export function welcomeTilesDense(l: Layout): boolean {
+  if (l.size === 'compact') return false;
+  return ((contentWidth(l) - 24) * 10) / 21 < ROW_TILE_DENSE_MAX;
+}
+
 /** Height of one number key: tighter on a phone on its side. */
 export function keyHeight(l: Layout): number {
   if (l.short) return l.touchMin;

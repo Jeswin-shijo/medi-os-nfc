@@ -30,6 +30,8 @@ interface BigTileProps {
   badgeLive?: boolean;
   /** Stop looping animations while the screen is covered by another one. */
   paused?: boolean;
+  /** A narrow column: phone metrics on any screen, and up to three lines for the subtitle. */
+  dense?: boolean;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
@@ -49,13 +51,15 @@ export function BigTile({
   badge,
   badgeLive = false,
   paused = false,
+  dense = false,
   onPress,
   style,
   accessibilityLabel,
 }: BigTileProps) {
   const reduced = useReducedMotion();
   const layout = useLayout();
-  const compact = layout.size === 'compact';
+  // A dense tile (a narrow column) uses the phone metrics on any screen.
+  const compact = layout.size === 'compact' || dense;
   const lift = useSharedValue(selected ? 1 : 0);
   useEffect(() => {
     lift.value = withSpring(selected ? 1 : 0, motion.spring.settle);
@@ -89,7 +93,7 @@ export function BigTile({
             {title}
           </Text>
           {subtitle ? (
-            <Text style={[styles.subtitle, { color: subInk }, !row && styles.centred]} numberOfLines={2}>
+            <Text style={[styles.subtitle, { color: subInk }, !row && styles.centred]} numberOfLines={dense ? 3 : 2}>
               {subtitle}
             </Text>
           ) : null}

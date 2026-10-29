@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { layoutFor } from './layout';
-import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, phoneMetrics, sideBySide } from './sizing';
+import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, phoneMetrics, sideBySide, welcomeTilesDense } from './sizing';
 
 test('fit keeps the tablet size where there is room and shrinks where there is not', () => {
   assert.equal(fit(460, 1200), 460);
@@ -65,4 +65,15 @@ test('keys and phone touch targets are never under the layout minimum', () => {
     const l = layoutFor(w, h);
     assert.ok(keyHeight(l) >= l.touchMin, `${w}x${h}`);
   }
+});
+
+test('Welcome row tiles go dense where their column is narrow, so the title and line fit', () => {
+  assert.equal(welcomeTilesDense(layoutFor(1280, 800)), false);
+  assert.equal(welcomeTilesDense(layoutFor(1920, 1200)), false);
+  // Tablet upright, phone on its side, small tablet on its side: the column is under 440 dp.
+  assert.equal(welcomeTilesDense(layoutFor(800, 1280)), true);
+  assert.equal(welcomeTilesDense(layoutFor(952, 427)), true);
+  assert.equal(welcomeTilesDense(layoutFor(1024, 640)), true);
+  // A phone upright stacks the tiles full width (it already uses the compact tile).
+  assert.equal(welcomeTilesDense(layoutFor(427, 952)), false);
 });

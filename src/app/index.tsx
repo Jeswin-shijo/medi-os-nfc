@@ -31,6 +31,7 @@ import { colors, fonts, headerGradient, motion, radii, spacing, typography } fro
 import { BigTile } from '../ui/BigTile';
 import { Ripple } from '../ui/Ripple';
 import { Screen } from '../ui/Screen';
+import { welcomeTilesDense } from '../ui/sizing';
 import { useShake } from '../ui/Shake';
 import { rowShare } from '../ui/layout';
 import { useLayout } from '../ui/useLayout';
@@ -61,6 +62,7 @@ export default function Welcome() {
   const compact = layout.size === 'compact';
   // Tiles sit side by side from 600 dp wide; a phone upright stacks them, the card tile first and full width.
   const stacked = compact;
+  const denseTiles = welcomeTilesDense(layout);
   const { style: shakeStyle, shake } = useShake();
   const [phase, setPhase] = useState<Phase>('idle');
   const [notice, setNotice] = useState<string | null>(null);
@@ -221,6 +223,7 @@ export default function Welcome() {
                     subtitle={strings.welcome.find.subtitle}
                     icon="cellphone-message"
                     color={colors.purple}
+                    dense={denseTiles}
                     disabled={busy}
                     onPress={() => router.push('/find')}
                     style={styles.fill}
@@ -234,6 +237,7 @@ export default function Welcome() {
                   subtitle={strings.welcome.newPatient.subtitle}
                   icon="account-plus-outline"
                   color={colors.successBright}
+                  dense={denseTiles}
                   disabled={busy}
                   onPress={() => router.push('/register')}
                   style={styles.fill}
