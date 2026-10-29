@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { layoutFor } from './layout';
-import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, patientFactsTwoColumns, phoneMetrics, sideBySide, welcomeTilesDense } from './sizing';
+import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, patientFactsTwoColumns, phoneMetrics, sideBySide, welcomeStacked, welcomeTilesDense } from './sizing';
 
 test('fit keeps the tablet size where there is room and shrinks where there is not', () => {
   assert.equal(fit(460, 1200), 460);
@@ -87,4 +87,14 @@ test('patient facts sit two to a row only where "48 years · Female" and "26 Sep
   assert.equal(patientFactsTwoColumns(layoutFor(952, 427)), false);
   // A phone upright stacks the card; its facts are one per row already.
   assert.equal(patientFactsTwoColumns(layoutFor(427, 952)), false);
+});
+
+test('Welcome stacks its tiles on phones upright and small tablets upright', () => {
+  assert.equal(welcomeStacked(layoutFor(427, 952)), true);
+  assert.equal(welcomeStacked(layoutFor(640, 1024)), true);
+  assert.equal(welcomeStacked(layoutFor(800, 1280)), false);
+  assert.equal(welcomeStacked(layoutFor(952, 427)), false);
+  assert.equal(welcomeStacked(layoutFor(1280, 800)), false);
+  // Stacked tiles are full width: never dense.
+  assert.equal(welcomeTilesDense(layoutFor(640, 1024)), false);
 });

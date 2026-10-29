@@ -20,6 +20,10 @@ export function padWidth(l: Layout): number {
   return l.size === 'expanded' ? 460 : fit(380, Math.round(available * 0.42));
 }
 
+/** Content narrower than this stacks Welcome's tiles (card first, full width): a phone upright, a small tablet upright. */
+export const WELCOME_SIDE_BY_SIDE_MIN = 640;
+export const welcomeStacked = (l: Layout) => l.size === 'compact' || contentWidth(l) < WELCOME_SIDE_BY_SIDE_MIN;
+
 /** A row tile narrower than this uses the tighter phone metrics (smaller icon and padding), so its text fits. */
 export const ROW_TILE_DENSE_MAX = 440;
 
@@ -29,7 +33,7 @@ export const ROW_TILE_DENSE_MAX = 440;
  * and a small tablet. A phone upright stacks them full width with the compact tile already.
  */
 export function welcomeTilesDense(l: Layout): boolean {
-  if (l.size === 'compact') return false;
+  if (welcomeStacked(l)) return false;
   return ((contentWidth(l) - 24) * 10) / 21 < ROW_TILE_DENSE_MAX;
 }
 
