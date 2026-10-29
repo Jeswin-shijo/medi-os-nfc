@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppState, Keyboard, StyleSheet, TextInput } from 'react-native';
 import { UsbReaderBuffer } from './cardId';
 
@@ -39,6 +39,16 @@ export function UsbReaderInput({ onCard }: UsbReaderInputProps) {
   useEffect(() => {
     latestOnCard.current = onCard;
   }, [onCard]);
+
+  // React Native's TextInput unregisters itself before it blurs on unmount, so a focused field that goes
+  // away (this one, when a card is read) stays recorded as focused and the next reader field would never
+  // take the focus. This runs before the TextInput's own cleanup: give the focus up while that still counts.
+  useLayoutEffect(() => {
+    const input = ref.current;
+    return () => {
+      if (input && TextInput.State.currentlyFocusedInput() === input) TextInput.State.blurTextInput(input);
+    };
+  }, []);
 
   useEffect(() => {
     // Listen from the start, and again when back from the background (a system dialog, the screen waking up).
