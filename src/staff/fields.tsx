@@ -1,10 +1,13 @@
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { colors, fonts, radii, spacing, typography } from '../theme/tokens';
+import { useLayout } from '../ui/useLayout';
+import { staffSizes } from './staffSizing';
 import { useStaffSession } from './useStaffSession';
 
 /** A labelled text field for staff screens; typing keeps the staff session alive. */
 export function StaffField({ label, onChangeText, ...rest }: TextInputProps & { label: string }) {
   const touch = useStaffSession((s) => s.touch);
+  const { controlHeight, inputFont } = staffSizes(useLayout());
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -20,7 +23,7 @@ export function StaffField({ label, onChangeText, ...rest }: TextInputProps & { 
           touch();
           onChangeText?.(text);
         }}
-        style={styles.input}
+        style={[styles.input, { height: controlHeight, fontSize: inputFont }]}
       />
     </View>
   );
@@ -38,13 +41,11 @@ const styles = StyleSheet.create({
   field: { gap: 6 },
   label: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.semibold },
   input: {
-    height: 60,
     borderRadius: radii.md,
     borderWidth: 2,
     borderColor: colors.borderDark,
     paddingHorizontal: spacing.md,
     fontFamily: fonts.regular,
-    fontSize: 20,
     color: colors.textPrimary,
     backgroundColor: colors.background,
   },

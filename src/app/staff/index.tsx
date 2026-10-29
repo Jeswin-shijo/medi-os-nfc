@@ -13,6 +13,8 @@ import { useStaffSession } from '../../staff/useStaffSession';
 import { useKioskApp } from '../../store/useKioskApp';
 import { colors, spacing, typography } from '../../theme/tokens';
 import { BigTile } from '../../ui/BigTile';
+import { useLayout } from '../../ui/useLayout';
+import { staffSizes } from '../../staff/staffSizing';
 import { Button } from '../../ui/Button';
 
 export default function StaffIndex() {
@@ -116,13 +118,15 @@ function ConfirmSetupLink() {
 }
 
 function Menu() {
+  const { tileBasis } = staffSizes(useLayout());
+  const tile = { flexBasis: tileBasis };
   return (
     <StaffFrame title={strings.staff.title}>
       <View style={styles.grid}>
-        <BigTile style={styles.tile} orientation="row" icon="credit-card-wireless-outline" title={strings.staff.menu.linkCard.title} subtitle={strings.staff.menu.linkCard.subtitle} onPress={() => router.push('/staff/link-card')} />
-        <BigTile style={styles.tile} orientation="row" icon="printer-pos" title={strings.staff.menu.printer.title} subtitle={strings.staff.menu.printer.subtitle} color={colors.purple} onPress={() => router.push('/staff/printer')} />
-        <BigTile style={styles.tile} orientation="row" icon="cog-outline" title={strings.staff.menu.setup.title} subtitle={strings.staff.menu.setup.subtitle} color={colors.navy} onPress={() => router.push('/staff/setup')} />
-        <BigTile style={styles.tile} orientation="row" icon="logout" title={strings.staff.menu.exit.title} subtitle={strings.staff.menu.exit.subtitle} color={colors.dangerStrong} onPress={leaveStaffMode} />
+        <BigTile style={[styles.tile, tile]} orientation="row" icon="credit-card-wireless-outline" title={strings.staff.menu.linkCard.title} subtitle={strings.staff.menu.linkCard.subtitle} onPress={() => router.push('/staff/link-card')} />
+        <BigTile style={[styles.tile, tile]} orientation="row" icon="printer-pos" title={strings.staff.menu.printer.title} subtitle={strings.staff.menu.printer.subtitle} color={colors.purple} onPress={() => router.push('/staff/printer')} />
+        <BigTile style={[styles.tile, tile]} orientation="row" icon="cog-outline" title={strings.staff.menu.setup.title} subtitle={strings.staff.menu.setup.subtitle} color={colors.navy} onPress={() => router.push('/staff/setup')} />
+        <BigTile style={[styles.tile, tile]} orientation="row" icon="logout" title={strings.staff.menu.exit.title} subtitle={strings.staff.menu.exit.subtitle} color={colors.dangerStrong} onPress={leaveStaffMode} />
       </View>
     </StaffFrame>
   );
@@ -133,5 +137,5 @@ const styles = StyleSheet.create({
   intro: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   confirmTitle: { ...typography.headline, color: colors.textPrimary },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  tile: { flexGrow: 1, flexBasis: 440 },
+  tile: { flexGrow: 1 },
 });

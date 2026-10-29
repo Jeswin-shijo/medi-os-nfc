@@ -10,10 +10,12 @@ import { buildTestSlip } from '../../printer/testSlip';
 import { isSavedPrinter, savedPrinterStatus, usbIdentity, usbPrinterSettings } from '../../printer/usbPrinter';
 import { Notice, StaffField } from '../../staff/fields';
 import { StaffCard, StaffFrame } from '../../staff/StaffFrame';
+import { staffSizes } from '../../staff/staffSizing';
 import { useStaffSession } from '../../staff/useStaffSession';
 import { useKioskApp } from '../../store/useKioskApp';
 import { colors, fonts, radii, spacing, typography } from '../../theme/tokens';
 import { Button } from '../../ui/Button';
+import { useLayout } from '../../ui/useLayout';
 
 type Transport = 'usb' | 'network';
 type Result = { tone: 'ok' | 'error'; text: string };
@@ -29,6 +31,7 @@ function parsePort(text: string): number | null {
 export default function PrinterScreen() {
   const config = useKioskApp((s) => s.config);
   const touch = useStaffSession((s) => s.touch);
+  const { controlHeight, optionBasis } = staffSizes(useLayout());
   const [saved, setSaved] = useState<PrinterSettings | null>(null);
   const [transport, setTransport] = useState<Transport>('usb');
   const [devices, setDevices] = useState<UsbPrinter[] | null>(null);
@@ -155,7 +158,7 @@ export default function PrinterScreen() {
                 setTransport(t);
                 setResult(null);
               }}
-              style={[styles.radio, transport === t && styles.radioOn]}
+              style={[styles.radio, { minHeight: controlHeight, flexBasis: optionBasis }, transport === t && styles.radioOn]}
             >
               <View style={[styles.dot, transport === t && styles.dotOn]} />
               <Text style={styles.radioText}>{t === 'usb' ? strings.staff.printer.usb : strings.staff.printer.network}</Text>
@@ -179,7 +182,7 @@ export default function PrinterScreen() {
                     setChosenId(d.deviceId);
                     setResult(null);
                   }}
-                  style={[styles.row, on && styles.rowOn, !d.printerClass && styles.rowOff]}
+                  style={[styles.row, { minHeight: controlHeight }, on && styles.rowOn, !d.printerClass && styles.rowOff]}
                 >
                   <View style={styles.rowText}>
                     <Text style={styles.rowName} numberOfLines={1}>{d.name || `${hex4(d.vendorId)}:${hex4(d.productId)}`}</Text>
@@ -202,8 +205,8 @@ export default function PrinterScreen() {
 
       {result ? <Notice tone={result.tone}>{result.text}</Notice> : null}
       <View style={styles.actions}>
-        <Button style={styles.action} label={busy ? strings.staff.printer.testing : strings.staff.printer.test} variant="secondary" icon="printer" loading={busy} onPress={() => void testPrint()} />
-        <Button style={styles.action} label={strings.staff.printer.save} icon="content-save-outline" disabled={busy} onPress={() => void save()} />
+        <Button style={[styles.action, { flexBasis: optionBasis }]} label={busy ? strings.staff.printer.testing : strings.staff.printer.test} variant="secondary" icon="printer" loading={busy} onPress={() => void testPrint()} />
+        <Button style={[styles.action, { flexBasis: optionBasis }]} label={strings.staff.printer.save} icon="content-save-outline" disabled={busy} onPress={() => void save()} />
       </View>
     </StaffFrame>
   );
@@ -213,18 +216,18 @@ const styles = StyleSheet.create({
   label: { ...typography.caption, color: colors.textSecondary, fontFamily: fonts.semibold },
   hint: { ...typography.caption, color: colors.textSecondary },
   gap: { gap: spacing.sm },
-  radios: { flexDirection: 'row', gap: spacing.md },
-  radio: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 64, paddingHorizontal: spacing.md, borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background },
+  radios: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  radio: { flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background },
   radioOn: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   radioText: { ...typography.label, color: colors.textPrimary },
   dot: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.borderDark, backgroundColor: colors.card },
   dotOn: { borderColor: colors.primary, borderWidth: 7 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, minHeight: 64, borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background },
   rowOn: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   rowOff: { opacity: 0.55 },
   rowText: { flex: 1, gap: 2 },
   rowName: { fontFamily: fonts.semibold, fontSize: 20, color: colors.textPrimary },
   tag: { ...typography.small, color: colors.success, backgroundColor: colors.accentLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill, overflow: 'hidden' },
-  actions: { flexDirection: 'row', gap: spacing.md },
-  action: { flex: 1 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  action: { flexGrow: 1 },
 });

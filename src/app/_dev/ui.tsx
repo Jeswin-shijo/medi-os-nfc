@@ -3,6 +3,7 @@ import { Redirect } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FlowStep } from '../../flow/steps';
 import { StillThere } from '../../flow/useInactivity';
 import { Enter } from '../../motion/Enter';
@@ -25,7 +26,9 @@ import { SampleStrip } from '../../ui/SampleStrip';
 import { useShake } from '../../ui/Shake';
 import { StatusPanel } from '../../ui/StatusPanel';
 import { StepTitle } from '../../ui/StepTitle';
+import { contentWidth, fit } from '../../ui/sizing';
 import { Stepper } from '../../ui/Stepper';
+import { useLayout } from '../../ui/useLayout';
 
 // Developer gallery of the kiosk UI kit (/_dev/ui): every primitive, live, for a quick visual check
 // and for the tablet screenshots. Not reachable in release builds.
@@ -48,6 +51,15 @@ function Gallery() {
   const [askStill, setAskStill] = useState(false);
   const shakeDemo = useShake();
   const { soundsOn, setSoundsOn } = useFeedbackSettings();
+  const layout = useLayout();
+  const insets = useSafeAreaInsets();
+  const compact = layout.size === 'compact';
+  // Room inside a specimen card: the page gutters, the card's own padding and borders.
+  const inner = Math.max(0, layout.width - 2 * layout.gutter - insets.left - insets.right - 2 * (compact ? spacing.md : spacing.lg) - 2);
+  const padWidth = fit(420, inner);
+  const qrFrame = fit(404, inner - 16);
+  const qrSize = qrFrame - 84;
+  const tile = { flexGrow: 1, flexBasis: 160, minWidth: 140 };
 
   const type = (d: string) => {
     setOtpStatus('idle');
@@ -56,7 +68,17 @@ function Gallery() {
 
   return (
     <View style={styles.fill}>
-      <ScrollView contentContainerStyle={styles.page}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.page,
+          {
+            paddingLeft: layout.gutter + insets.left,
+            paddingRight: layout.gutter + insets.right,
+            paddingBottom: layout.gutter + insets.bottom,
+            gap: compact ? spacing.md : spacing.lg,
+          },
+        ]}
+      >
         <StepTitle style={styles.wide} title="Kiosk UI kit" subtitle="Every primitive, live. Tap things." step={{ current: 2, total: 5 }} />
 
         <Specimen title="Stepper" wide>
@@ -124,7 +146,7 @@ function Gallery() {
                 selected={selected === d.code}
                 disabled={d.disabled}
                 onPress={() => setSelected(d.code)}
-                style={styles.flex}
+                style={tile}
               />
             ))}
           </Row>
@@ -132,9 +154,9 @@ function Gallery() {
 
         <Specimen title="Big tiles: payment methods (filled)" wide>
           <Row>
-            <BigTile filled title="UPI" subtitle="Scan QR with GPay, PhonePe, Paytm" icon="qrcode-scan" color={methodColors.UPI} style={styles.flex} />
-            <BigTile filled title="Cash" subtitle="Pay at the counter, staff confirm" icon="cash" color={methodColors.CASH} style={styles.flex} />
-            <BigTile filled title="Card" subtitle="Tap or insert on the card machine" icon="credit-card-outline" color={methodColors.CARD} style={styles.flex} />
+            <BigTile filled title="UPI" subtitle="Scan QR with GPay, PhonePe, Paytm" icon="qrcode-scan" color={methodColors.UPI} style={tile} />
+            <BigTile filled title="Cash" subtitle="Pay at the counter, staff confirm" icon="cash" color={methodColors.CASH} style={tile} />
+            <BigTile filled title="Card" subtitle="Tap or insert on the card machine" icon="credit-card-outline" color={methodColors.CARD} style={tile} />
           </Row>
         </Specimen>
 
@@ -150,7 +172,7 @@ function Gallery() {
               setOtpStatus('idle');
               setOtp('');
             }}
-            style={styles.pad}
+            style={{ width: padWidth, alignSelf: 'center' }}
           />
           <Row>
             <Button
@@ -174,8 +196,8 @@ function Gallery() {
 
         <Specimen title="QR view and SAMPLE strip">
           <View style={styles.qrFrame}>
-            <RingCountdown key={`qr-${replay}`} seconds={300} total={300} size={404} strokeWidth={8}>
-              <QrView key={`q-${replay}`} value={SAMPLE_UPI} size={320} />
+            <RingCountdown key={`qr-${replay}`} seconds={300} total={300} size={qrFrame} strokeWidth={8}>
+              <QrView key={`q-${replay}`} value={SAMPLE_UPI} size={qrSize} />
             </RingCountdown>
           </View>
           <SampleStrip text="SAMPLE: do not pay. This QR cannot receive money." />
@@ -195,7 +217,7 @@ function Gallery() {
         <Specimen title="Rolling numbers">
           <View style={styles.tokenCard}>
             <Text style={styles.caption}>Your token</Text>
-            <RollingNumber value={`G-${String(token).padStart(3, '0')}`} style={styles.token} />
+            <RollingNumber value={`G-${String(token).padStart(3, '0')}`} style={[styles.token, compact && styles.tokenCompact]} />
           </View>
           <RollingNumber key={`code-${replay}`} value="4821" style={styles.code} delay={150} />
           <Button label="Next token" icon="plus" variant="secondary" onPress={() => setToken((n) => n + 1)} />
@@ -273,8 +295,11 @@ function Gallery() {
 }
 
 function Specimen({ title, wide = false, children }: { title: string; wide?: boolean; children: ReactNode }) {
+  const layout = useLayout();
+  // A half-width card is 520 where there is room for two, and the whole row where there is not.
+  const half = { flexGrow: 1, flexBasis: fit(520, contentWidth(layout)) };
   return (
-    <View style={[styles.specimen, wide ? styles.wide : styles.half]}>
+    <View style={[styles.specimen, layout.size === 'compact' && styles.specimenCompact, wide ? styles.wide : half]}>
       <Text style={styles.specimenTitle}>{title}</Text>
       {children}
     </View>
@@ -285,15 +310,13 @@ const Row = ({ children }: { children: ReactNode }) => <View style={styles.row}>
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  flex: { flex: 1 },
-  page: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, padding: spacing.xl, paddingTop: spacing.md },
+  page: { flexDirection: 'row', flexWrap: 'wrap', paddingTop: spacing.md },
   specimen: { gap: spacing.md, padding: spacing.lg, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, boxShadow: shadows.card },
   wide: { width: '100%' },
-  half: { flexGrow: 1, flexBasis: 520 },
+  specimenCompact: { padding: spacing.md },
   specimenTitle: { ...typography.label, color: colors.textSecondary },
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.md },
   stepper: { height: 60 },
-  pad: { width: 420, alignSelf: 'center' },
   qrFrame: { alignSelf: 'center', padding: 8, borderRadius: radii.lg, backgroundColor: colors.card },
   centre: { alignItems: 'center' },
   body: { ...typography.body, color: colors.textPrimary },
@@ -301,6 +324,7 @@ const styles = StyleSheet.create({
   cardIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   tokenCard: { alignItems: 'center', paddingVertical: spacing.md, borderRadius: radii.md, backgroundColor: colors.primaryLight },
   token: { ...typography.display, color: colors.primaryDark },
+  tokenCompact: { fontSize: 72, lineHeight: 82 },
   code: { fontFamily: fonts.bold, fontSize: 64, lineHeight: 72, letterSpacing: 8, color: colors.textPrimary, alignSelf: 'center' },
   ringNumber: { fontFamily: fonts.bold, fontSize: 36, lineHeight: 42 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radii.pill, backgroundColor: colors.accentLight },

@@ -6,11 +6,13 @@ import { useFeedbackSettings } from '../../motion/feedback';
 import { PressableScale } from '../../motion/Pressable';
 import { ConnectForm } from '../../setup/ConnectForm';
 import { StaffCard, StaffFrame } from '../../staff/StaffFrame';
+import { staffSizes } from '../../staff/staffSizing';
 import { leaveStaffMode } from '../../staff/useStaffGuard';
 import { useStaffSession } from '../../staff/useStaffSession';
 import { useKioskApp } from '../../store/useKioskApp';
 import { colors, fonts, radii, spacing, typography } from '../../theme/tokens';
 import { Button } from '../../ui/Button';
+import { useLayout } from '../../ui/useLayout';
 
 export default function StaffSetupScreen() {
   const address = useKioskApp((s) => s.address);
@@ -19,6 +21,7 @@ export default function StaffSetupScreen() {
   const setSoundsOn = useFeedbackSettings((s) => s.setSoundsOn);
   const touch = useStaffSession((s) => s.touch);
   const [changing, setChanging] = useState(false);
+  const { controlHeight } = staffSizes(useLayout());
 
   if (changing) {
     return (
@@ -53,7 +56,7 @@ export default function StaffSetupScreen() {
                   touch();
                   void setSoundsOn(on);
                 }}
-                style={[styles.radio, soundsOn === on && styles.radioOn]}
+                style={[styles.radio, { minHeight: controlHeight }, soundsOn === on && styles.radioOn]}
               >
                 <Text style={styles.radioText}>{on ? strings.staff.setup.soundsOn : strings.staff.setup.soundsOff}</Text>
               </PressableScale>
@@ -74,9 +77,9 @@ const styles = StyleSheet.create({
   hint: { ...typography.caption, color: colors.textSecondary },
   gapTop: { marginTop: spacing.sm },
   soundRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
-  soundText: { flex: 1, minWidth: 240, gap: 2 },
+  soundText: { flexGrow: 1, flexShrink: 1, flexBasis: 200, gap: 2 },
   radios: { flexDirection: 'row', gap: spacing.sm },
-  radio: { minWidth: 110, minHeight: 64, alignItems: 'center', justifyContent: 'center', borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background },
+  radio: { minWidth: 110, alignItems: 'center', justifyContent: 'center', borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background },
   radioOn: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   radioText: { ...typography.label, color: colors.textPrimary },
 });

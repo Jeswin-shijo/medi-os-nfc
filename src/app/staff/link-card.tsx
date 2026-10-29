@@ -9,10 +9,12 @@ import { feedback } from '../../motion/feedback';
 import { PressableScale } from '../../motion/Pressable';
 import { Notice, StaffField } from '../../staff/fields';
 import { StaffCard, StaffFrame } from '../../staff/StaffFrame';
+import { staffSizes } from '../../staff/staffSizing';
 import { useStaffSession } from '../../staff/useStaffSession';
 import { useKioskApp } from '../../store/useKioskApp';
 import { colors, fonts, radii, spacing, typography } from '../../theme/tokens';
 import { Button } from '../../ui/Button';
+import { useLayout } from '../../ui/useLayout';
 
 const SEARCH_DELAY_MS = 350;
 const last4 = (cardId: string): string => cardId.slice(-4);
@@ -22,6 +24,7 @@ export default function LinkCardScreen() {
   const token = useStaffSession((s) => s.token);
   const touch = useStaffSession((s) => s.touch);
   const end = useStaffSession((s) => s.end);
+  const { controlHeight } = staffSizes(useLayout());
 
   const [cardId, setCardId] = useState<string | null>(null);
   const [q, setQ] = useState('');
@@ -151,7 +154,7 @@ export default function LinkCardScreen() {
                 setConflict(null);
               }}
               accessibilityState={{ selected: on }}
-              style={[styles.row, on && styles.rowOn]}
+              style={[styles.row, { minHeight: controlHeight }, on && styles.rowOn]}
             >
               <Text style={styles.rowName} numberOfLines={1}>{p.name}</Text>
               <Text style={styles.rowMeta} numberOfLines={1}>
@@ -186,7 +189,7 @@ export default function LinkCardScreen() {
 const styles = StyleSheet.create({
   cardRead: { ...typography.headline, color: colors.textPrimary },
   hint: { ...typography.caption, color: colors.textSecondary },
-  row: { padding: spacing.md, borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background, gap: 2, minHeight: 64, justifyContent: 'center' },
+  row: { padding: spacing.md, borderRadius: radii.md, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.background, gap: 2, justifyContent: 'center' },
   rowOn: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   rowName: { fontFamily: fonts.semibold, fontSize: 20, color: colors.textPrimary },
   rowMeta: { ...typography.caption, color: colors.textSecondary },
