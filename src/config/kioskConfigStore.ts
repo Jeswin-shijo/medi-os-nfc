@@ -14,6 +14,7 @@ export interface PrinterSettings {
 
 const CONFIG_KEY = 'medios.kiosk.config';
 const PRINTER_KEY = 'medios.kiosk.printer';
+const SOUNDS_KEY = 'medios.kiosk.sounds';
 
 async function readJson<T>(name: string): Promise<T | null> {
   try {
@@ -46,3 +47,10 @@ export async function loadKioskAddress(): Promise<string> {
 export const loadPrinterSettings = (): Promise<PrinterSettings | null> => readJson<PrinterSettings>(PRINTER_KEY);
 
 export const savePrinterSettings = (settings: PrinterSettings): Promise<void> => SecureStore.setItemAsync(PRINTER_KEY, JSON.stringify(settings));
+
+/** Feedback chimes; staff switch them off in the staff menu. On unless saved as off. */
+export async function loadSoundsOn(): Promise<boolean> {
+  return (await readJson<boolean>(SOUNDS_KEY)) !== false;
+}
+
+export const saveSoundsOn = (on: boolean): Promise<void> => SecureStore.setItemAsync(SOUNDS_KEY, JSON.stringify(on));

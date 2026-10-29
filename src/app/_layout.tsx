@@ -9,10 +9,15 @@ import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFlow } from '../flow/useFlow';
+import { InactivityGuard } from '../flow/useInactivity';
 import { strings } from '../i18n/strings';
+import { feedback } from '../motion/feedback';
 import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts, radii } from '../theme/tokens';
+import { KioskShell } from '../ui/KioskShell';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -21,9 +26,12 @@ export default function RootLayout() {
   const onSetup = (useSegments() as string[])[0] === 'setup';
   const [fontsLoaded, fontError] = useFonts({ IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, IBMPlexSans_700Bold });
   const { status, loadError, reload } = useKioskApp();
+  const resetting = useFlow((s) => s.resetting);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     void reload();
+    void feedback.prepare();
   }, [reload]);
 
   const ready = (fontsLoaded || fontError) && status !== 'loading';
@@ -35,14 +43,25 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      {/* The welcome screen needs a configured kiosk; without one, navigation falls back to /setup. */}
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-        <Stack.Protected guard={status === 'ready' || status === 'offline'}>
-          <Stack.Screen name="index" />
-        </Stack.Protected>
-        <Stack.Screen name="setup" />
-      </Stack>
+      <StatusBar style="light" />
+      <InactivityGuard>
+        <KioskShell>
+          {/* Forward steps slide in from the right; Start over (and reduced motion) fades. */}
+          {/* The welcome screen needs a configured kiosk; without one, navigation falls back to /setup. */}
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: reduced || resetting ? 'fade' : 'slide_from_right',
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Protected guard={status === 'ready' || status === 'offline'}>
+              <Stack.Screen name="index" />
+            </Stack.Protected>
+            <Stack.Screen name="setup" />
+          </Stack>
+        </KioskShell>
+      </InactivityGuard>
       {status === 'offline' && !onSetup ? (
         <View style={styles.offline}>
           <Text style={styles.offlineTitle}>{strings.offline.title}</Text>

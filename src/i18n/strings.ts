@@ -28,4 +28,39 @@ export const strings = {
   welcome: {
     placeholder: 'Reception kiosk is connected',
   },
+  shell: {
+    fallbackName: 'MediOS Reception',
+    subtitle: 'OP Registration Kiosk',
+    startOver: 'Start over',
+    logoHint: 'Hospital logo',
+  },
+  steps: ['Identify', 'Doctor', 'Pay', 'Ticket'],
+  stepOf: (current: number, total: number) => `Step ${current} of ${total}`,
+  stepDone: (name: string) => `${name}, done`,
+  stepCurrent: (name: string) => `${name}, current step`,
+  idle: {
+    title: 'Are you still there?',
+    body: 'For your privacy, this screen will start over soon.',
+    stay: "I'm still here",
+    startOver: 'Start over',
+    secondsLeft: (n: number) => `${n} seconds left`,
+  },
+  status: {
+    loading: 'Loading…',
+    errorTitle: 'Something went wrong',
+    retry: 'Try again',
+  },
+  sample: {
+    badge: 'SAMPLE',
+  },
+  numberPad: {
+    clear: 'Clear',
+    backspace: 'Delete last digit',
+  },
+  otp: {
+    label: (filled: number, total: number) => `Code, ${filled} of ${total} digits entered`,
+  },
+  qr: {
+    label: 'QR code',
+  },
 } as const;
