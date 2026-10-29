@@ -19,11 +19,12 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      "expo-screen-orientation",
       [
         "react-native-nfc-manager",
         {
-          "nfcPermission": "Allow MediOS Reception Kiosk to scan and write patient NFC smartcards",
-          "includeNdefEntitlement": true
+          "nfcPermission": "Allow the reception kiosk to read patient NFC cards",
+          "includeNdefEntitlement": false
         }
       ],
       "expo-secure-store",
@@ -34,7 +35,15 @@
           "enableBackgroundPlayback": false
         }
       ],
-      "./modules/medios-printer/app.plugin.js"
+      "./modules/medios-printer/app.plugin.js",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ]
   }
 }

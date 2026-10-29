@@ -5,12 +5,16 @@ import {
   IBMPlexSans_700Bold,
   useFonts,
 } from '@expo-google-fonts/ibm-plex-sans';
-import { SplashScreen, Stack, useSegments } from 'expo-router';
+import { useKeepAwake } from 'expo-keep-awake';
+import { NavigationBar } from 'expo-navigation-bar';
+import * as ScreenOrientation from 'expo-screen-orientation';
+import { router, SplashScreen, Stack, usePathname, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { hardwareBackAction } from '../flow/backPolicy';
 import { useFlow } from '../flow/useFlow';
 import { InactivityGuard } from '../flow/useInactivity';
 import { strings } from '../i18n/strings';
@@ -32,6 +36,7 @@ export default function RootLayout() {
   const resetting = useFlow((s) => s.resetting);
   const reduced = useReducedMotion();
   useEndStaffOutsideStaff();
+  useKioskMode();
 
   useEffect(() => {
     void reload();
@@ -47,7 +52,7 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
+      <StatusBar style="light" hidden />
       <InactivityGuard>
         <KioskShell>
           {/* Forward steps slide in from the right; Start over (and reduced motion) fades. */}
@@ -91,6 +96,25 @@ export default function RootLayout() {
       {status === 'offline' && !onSetup ? <OfflineOverlay message={loadError ?? strings.errors.network} onRetry={() => void reload()} /> : null}
     </SafeAreaProvider>
   );
+}
+
+/** Landscape lock, immersive mode (system bars hidden, a swipe from the edge shows them briefly), screen kept awake, and the Android Back button. */
+function useKioskMode() {
+  useKeepAwake();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
+    NavigationBar.setHidden(true);
+  }, []);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (hardwareBackAction(pathname) === 'back' && router.canGoBack()) router.back();
+      return true; // always handled: the kiosk app is never closed by Back
+    });
+    return () => sub.remove();
+  }, [pathname]);
 }
 
 /** Covers the screen below the header band: the logo stays reachable, so staff can still hold it for the staff menu. */

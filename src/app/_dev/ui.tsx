@@ -57,7 +57,7 @@ function Gallery() {
   return (
     <View style={styles.fill}>
       <ScrollView contentContainerStyle={styles.page}>
-        <StepTitle title="Kiosk UI kit" subtitle="Every primitive, live. Tap things." step={{ current: 2, total: 5 }} />
+        <StepTitle style={styles.wide} title="Kiosk UI kit" subtitle="Every primitive, live. Tap things." step={{ current: 2, total: 5 }} />
 
         <Specimen title="Stepper" wide>
           <View style={styles.stepper}>
