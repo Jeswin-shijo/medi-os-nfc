@@ -157,7 +157,8 @@ export default function LinkCardScreen() {
               style={[styles.row, { minHeight: controlHeight }, on && styles.rowOn]}
             >
               <Text style={styles.rowName} numberOfLines={1}>{p.name}</Text>
-              <Text style={styles.rowMeta} numberOfLines={1}>
+              {/* Two lines on a phone: staff need the whole phone number to tell family members apart. */}
+              <Text style={styles.rowMeta} numberOfLines={2}>
                 {[p.uhid, [p.age, p.gender].filter((x) => x !== undefined && x !== '').join(' / '), p.phone].filter(Boolean).join('  -  ')}
               </Text>
             </PressableScale>
