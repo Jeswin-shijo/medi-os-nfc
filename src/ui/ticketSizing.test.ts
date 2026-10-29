@@ -66,3 +66,13 @@ test('the facts go to one column when the slip is narrow (phones upright)', () =
   assert.equal(ticketSizes(layoutFor(390, 800)).factsTwoColumns, false);
   assert.equal(ticketSizes(layoutFor(768, 1024)).factsTwoColumns, true);
 });
+
+test('the OP number and the time share a row only where both fit; narrow slips put the time under the number', () => {
+  assert.equal(ticketSizes(layoutFor(1280, 800)).topRow, true);
+  assert.equal(ticketSizes(layoutFor(800, 1280)).topRow, true);
+  assert.equal(ticketSizes(layoutFor(1920, 1200)).topRow, true);
+  // Phones either way and the small tablet on its side would cut the OP number short on one row.
+  assert.equal(ticketSizes(layoutFor(427, 952)).topRow, false);
+  assert.equal(ticketSizes(layoutFor(952, 427)).topRow, false);
+  assert.equal(ticketSizes(layoutFor(1024, 640)).topRow, false);
+});

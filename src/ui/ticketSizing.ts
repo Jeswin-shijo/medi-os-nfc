@@ -11,6 +11,8 @@ export const SIDE_WIDTH = 480;
 const QR_BESIDE_MIN = 420;
 /** A slip's text area narrower than this shows the facts one per row. */
 const FACTS_TWO_COLUMNS_MIN = 300;
+/** The OP number (about 230 dp at 24) and the time (about 215 dp at 20) need this much text width on one row. */
+const TOP_ROW_MIN = 480;
 /** Padding the slip window puts around the paper (room for its shadow). */
 export const SLIP_WINDOW_PAD = 14;
 
@@ -34,6 +36,8 @@ export interface TicketSizes {
   factFont: number;
   factLine: number;
   factsTwoColumns: boolean;
+  /** The OP number and the time side by side; false puts the time under the number. */
+  topRow: boolean;
 }
 
 /** Slip first, then the side column: phones upright and small tablets upright (medium and taller than wide). */
@@ -69,5 +73,6 @@ export function ticketSizes(l: Layout): TicketSizes {
     factFont: compact ? 20 : 22,
     factLine: compact ? 26 : 28,
     factsTwoColumns: innerWidth >= FACTS_TWO_COLUMNS_MIN,
+    topRow: innerWidth >= TOP_ROW_MIN,
   };
 }

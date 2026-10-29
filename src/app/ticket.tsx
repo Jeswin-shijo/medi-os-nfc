@@ -154,15 +154,16 @@ function PaperTicket({ visit, token, sizes }: { visit: VisitView; token: KioskTo
   return (
     <View style={styles.paper}>
       <View style={[styles.paperBody, { paddingHorizontal: sizes.paperPadX, paddingTop: sizes.paperPadTop }]}>
-        <View style={styles.paperTop}>
-          <View style={styles.topCell}>
+        <View style={sizes.topRow ? styles.paperTop : styles.paperTopStacked}>
+          <View style={sizes.topRow ? styles.topCell : undefined}>
             <Text style={styles.caption}>{strings.ticket.opNumber}</Text>
-            <Text style={styles.opNumber} numberOfLines={1}>
+            {/* Never cut short: on the narrowest phones it shrinks a little instead. */}
+            <Text style={styles.opNumber} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
               {visit.opNumber ?? ''}
             </Text>
           </View>
           {visit.paidAtDisplay ? (
-            <View style={[styles.topCell, styles.topCellEnd]}>
+            <View style={sizes.topRow ? [styles.topCell, styles.topCellEnd] : undefined}>
               <Text style={styles.caption}>{strings.ticket.when}</Text>
               <Text style={styles.when} numberOfLines={1}>
                 {visit.paidAtDisplay}
@@ -386,6 +387,7 @@ const styles = StyleSheet.create({
   paper: { boxShadow: shadows.card },
   paperBody: { backgroundColor: colors.card, paddingBottom: 18, gap: 14, overflow: 'hidden' },
   paperTop: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md },
+  paperTopStacked: { gap: 6 },
   topCell: { flex: 1, gap: 2 },
   topCellEnd: { alignItems: 'flex-end' },
   caption: { ...typography.caption, color: colors.textTertiary },
