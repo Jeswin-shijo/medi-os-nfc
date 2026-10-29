@@ -65,9 +65,14 @@ export function patientFacts(l: Layout): PatientFacts {
   return { twoColumns: false, valueFont: null };
 }
 
+/** Expanded windows lower than this (a small tablet on its side) use the touch minimum for number keys. */
+export const SMALL_TABLET_MAX_HEIGHT = 720;
+
 /** Height of one number key: tighter on a phone on its side. */
 export function keyHeight(l: Layout): number {
   if (l.short) return l.touchMin;
+  // A small tablet on its side (1024 x 640): 80 dp keys pushed the last row below the fold; 64 is the tablet minimum.
+  if (l.size === 'expanded' && l.height < SMALL_TABLET_MAX_HEIGHT) return l.touchMin;
   return l.size === 'compact' ? 60 : l.size === 'medium' ? 72 : 80;
 }
 

@@ -100,3 +100,9 @@ test('Welcome stacks its tiles on phones upright and small tablets upright', () 
   // Stacked tiles are full width: never dense.
   assert.equal(welcomeTilesDense(layoutFor(640, 1024)), false);
 });
+
+test('a small tablet on its side uses 64 dp keys so the whole number pad fits under the header', () => {
+  assert.equal(keyHeight(layoutFor(1024, 640)), 64);
+  assert.equal(keyHeight(layoutFor(1280, 800)), 80);
+  assert.equal(keyHeight(layoutFor(1920, 1200)), 80);
+});
