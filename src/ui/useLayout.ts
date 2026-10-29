@@ -1,12 +1,25 @@
-import { Dimensions, useWindowDimensions } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Dimensions, Keyboard, useWindowDimensions } from 'react-native';
 import { layoutFor, type Layout } from './layout';
+import { layoutHeight } from './windowHeight';
+
+/** Whether the on-screen keyboard is up (Android has no "will" events, so the "did" ones). */
+function useKeyboardVisible(): boolean {
+  const [visible, setVisible] = useState(() => Keyboard.isVisible());
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setVisible(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setVisible(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return visible;
+}
 
 /** The current layout; the window size changes on rotation, so screens re-render as the device turns. */
 export function useLayout(): Layout {
-  const { width, height } = useWindowDimensions();
-  // The on-screen keyboard shrinks the window on Android; the layout must not jump under the cursor,
-  // so the height never drops below the screen's (matching the current orientation).
-  const screen = Dimensions.get('screen');
-  const screenHeight = width > height ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
-  return layoutFor(width, Math.max(height, screenHeight));
+  const window = useWindowDimensions();
+  const keyboardVisible = useKeyboardVisible();
+  return layoutFor(window.width, layoutHeight(window, Dimensions.get('screen'), keyboardVisible));
 }

@@ -1,25 +1,23 @@
 import { Redirect } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { usePayWaiting } from '../../flow/usePayWaiting';
 import { useFlow } from '../../flow/useFlow';
 import { MAX_WAIT_SECONDS, payScreenGuard, secondsLeft } from '../../flow/visitPolling';
 import { strings } from '../../i18n/strings';
 import { Enter } from '../../motion/Enter';
-import { colors, fonts, methodColors, radii, shadows, sizes, spacing, typography } from '../../theme/tokens';
+import { colors, fonts, methodColors, radii, shadows, spacing, typography } from '../../theme/tokens';
 import { Button } from '../../ui/Button';
 import { formatClock, useCountdown } from '../../ui/Countdown';
 import { ClosedPanel, ReconnectNote } from '../../ui/PayParts';
+import { copyType, heroType, upiSizes } from '../../ui/paySizing';
 import { QrView } from '../../ui/QrView';
 import { RingCountdown } from '../../ui/RingCountdown';
 import { SampleStrip } from '../../ui/SampleStrip';
+import { Screen } from '../../ui/Screen';
 import { WaitingDots } from '../../ui/StatusPanel';
+import { useLayout } from '../../ui/useLayout';
 import { useKioskApp } from '../../store/useKioskApp';
-
-const MAX_CONTENT_WIDTH = 1480;
-/** Header (96) + step tracker (60) + the screen's own padding, so the ring fits any tablet height. */
-const CHROME = 250;
-const RING_STROKE = 12;
 
 /** Step 6, UPI: the QR inside a ring that empties as the order runs out. The server decides when it is paid. */
 export default function PayUpi() {
@@ -31,7 +29,7 @@ export default function PayUpi() {
 }
 
 function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUri?: string; expiresAt: string; fee: number }) {
-  const { height } = useWindowDimensions();
+  const layout = useLayout();
   const skewMs = useKioskApp((s) => s.serverSkewMs);
   const sample = useKioskApp((s) => s.config?.sample.payments === true);
   const { closed, reconnecting, simulating, simulateFailed, simulate, chooseAnother } = usePayWaiting(visitId);
@@ -41,22 +39,24 @@ function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUr
 
   if (closed) return <ClosedPanel status={closed.status} />;
 
-  const ring = Math.round(Math.min(620, Math.max(380, height - CHROME)));
-  // The QR's corners must stay inside the ring: side ≤ (inner diameter) / √2.
-  const qr = Math.floor((ring - 2 * RING_STROKE - 8) / Math.SQRT2);
+  // The ring is sized from the window (see upiSizes); the QR's corners stay inside it.
+  const { stacked, ring, stroke, qr } = upiSizes(layout);
+  const hero = heroType(layout);
+  const copy = copyType(layout);
   const over = left === 0;
 
   return (
-    <View style={styles.screen}>
+    <Screen>
+      <View style={[styles.body, stacked && styles.bodyStacked]}>
       <Enter style={styles.ringSlot}>
-        <RingCountdown seconds={seconds} total={MAX_WAIT_SECONDS.UPI} size={ring} strokeWidth={RING_STROKE} color={methodColors.UPI} trackColor="#D7F2E5">
+        <RingCountdown seconds={seconds} total={MAX_WAIT_SECONDS.UPI} size={ring} strokeWidth={stroke} color={methodColors.UPI} trackColor="#D7F2E5">
           {upiUri ? <QrView value={upiUri} size={qr} accessibilityLabel={strings.upi.qrLabel(fee)} /> : null}
         </RingCountdown>
       </Enter>
 
-      <View style={styles.side}>
+      <View style={[styles.side, stacked && styles.sideStacked]}>
         <Enter index={1}>
-          <Text style={styles.title} accessibilityRole="header">
+          <Text style={[styles.title, hero, stacked && styles.titleStacked]} accessibilityRole="header">
             {strings.upi.title(fee)}
           </Text>
         </Enter>
@@ -67,7 +67,7 @@ function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUr
               <View style={styles.stepNo}>
                 <Text style={styles.stepNoText}>{i + 1}</Text>
               </View>
-              <Text style={styles.stepText}>{step}</Text>
+              <Text style={[styles.stepText, copy]}>{step}</Text>
             </View>
           ))}
         </Enter>
@@ -102,24 +102,18 @@ function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUr
           <Button label={strings.pay.chooseAnother} variant="secondary" icon="swap-horizontal" disabled={simulating} onPress={chooseAnother} />
         </Enter>
       </View>
-    </View>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MAX_CONTENT_WIDTH,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xl,
-    paddingHorizontal: sizes.screenGutter,
-    paddingVertical: spacing.md,
-  },
+  body: { flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
+  bodyStacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.lg },
   ringSlot: { alignItems: 'center', justifyContent: 'center' },
   side: { flex: 1, gap: spacing.lg, justifyContent: 'center' },
+  sideStacked: { flex: 0, gap: spacing.md },
+  titleStacked: { textAlign: 'center' },
   title: { ...typography.hero, color: colors.textPrimary },
   steps: { gap: 12 },
   step: { flexDirection: 'row', alignItems: 'center', gap: 14 },

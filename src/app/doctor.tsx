@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown, FadeOut, ReduceMotion, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 import { KioskApiError } from '../api/client';
 import type { AvailabilityState, KioskDoctor, KioskTokenView } from '../api/types';
@@ -13,18 +14,18 @@ import { Enter } from '../motion/Enter';
 import { feedback } from '../motion/feedback';
 import { PressableScale } from '../motion/Pressable';
 import { useKioskApp } from '../store/useKioskApp';
-import { colors, fonts, motion, radii, shadows, sizes, spacing, typography } from '../theme/tokens';
+import { colors, fonts, motion, radii, shadows, spacing, typography } from '../theme/tokens';
 import { Avatar } from '../ui/Avatar';
 import { Button, type IconName } from '../ui/Button';
 import { LiveDot } from '../ui/LiveDot';
+import { doctorCardMetrics, doctorSkeletonHeight, gridGap, gridItemWidth, gridWidth } from '../ui/paySizing';
+import { PickFrame } from '../ui/PickFrame';
+import { Screen } from '../ui/Screen';
 import { Skeleton } from '../ui/Skeleton';
 import { StatusPanel } from '../ui/StatusPanel';
 import { StepTitle } from '../ui/StepTitle';
+import { useLayout } from '../ui/useLayout';
 
-const MAX_CONTENT_WIDTH = 1480;
-const GAP = spacing.lg;
-/** Two across at 1280 dp, three on the big tablet. */
-const WIDE_SCREEN = 1600;
 const TOAST_MS = 4000;
 const SKELETON_COUNT = 4;
 
@@ -38,7 +39,8 @@ export default function Doctor() {
   const api = useKioskApp((s) => s.api);
   const session = useFlow((s) => s.session);
   const department = useFlow((s) => s.department);
-  const { width } = useWindowDimensions();
+  const layout = useLayout();
+  const insets = useSafeAreaInsets();
   const begin = useRequestGuard();
   const loadSeq = useRef(0);
   const loaded = useRef(false);
@@ -129,47 +131,57 @@ export default function Doctor() {
 
   if (blocked) return <BlockedPanel blocked={blocked} />;
 
-  const columns = width >= WIDE_SCREEN ? 3 : 2;
-  const content = Math.min(width, MAX_CONTENT_WIDTH) - 2 * sizes.screenGutter;
-  const cardWidth = Math.floor((content - GAP * (columns - 1)) / columns);
+  // One across on a phone upright, two on a tablet, three on the big tablet.
+  const columns = layout.columns('doctor');
+  const gap = gridGap(layout);
+  const cardWidth = gridItemWidth(gridWidth(layout, insets.left, insets.right), columns, gap);
+  // The note must not cover cards on a phone or a short window: it takes its own line above the bottom edge.
+  const inline = layout.size === 'compact' || layout.short;
+  const empty = layout.short ? { minHeight: 200 } : null;
+
+  const header = <StepTitle title={strings.doctor.title} subtitle={strings.doctor.subtitle(department.name)} />;
+  const footer = (
+    <Enter index={2} style={styles.actions}>
+      <Button label={strings.doctor.changeDepartment} variant="quiet" icon="arrow-left" disabled={pendingId !== null} onPress={() => router.back()} />
+    </Enter>
+  );
 
   return (
-    <View style={styles.screen}>
-      <StepTitle title={strings.doctor.title} subtitle={strings.doctor.subtitle(department.name)} />
-
+    <PickFrame
+      header={header}
+      footer={footer}
+      grid={!!doctors && doctors.length > 0 && !failed}
+      notice={inline && toast ? <Toast key={toast} message={toast} inline /> : null}
+      overlay={!inline && toast ? <Toast key={toast} message={toast} gutter={layout.gutter} /> : null}
+    >
       {failed ? (
-        <StatusPanel state="error" message={failed} onRetry={() => void load()} />
+        <StatusPanel state="error" message={failed} onRetry={() => void load()} style={empty} />
       ) : doctors === null ? (
-        <View style={styles.grid} accessibilityRole="progressbar" accessibilityLabel={strings.status.loading}>
+        <View style={[styles.grid, { gap }]} accessibilityRole="progressbar" accessibilityLabel={strings.status.loading}>
           {Array.from({ length: SKELETON_COUNT }, (_, i) => (
-            <Skeleton key={i} style={[styles.skeleton, { width: cardWidth }]} />
+            <Skeleton key={i} style={[styles.skeleton, { width: cardWidth, height: doctorSkeletonHeight(layout) }]} />
           ))}
         </View>
       ) : doctors.length === 0 ? (
-        <Enter style={styles.empty}>
+        <Enter style={[styles.empty, empty]}>
           <Text style={styles.emptyText}>{strings.doctor.empty}</Text>
         </Enter>
       ) : (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
+        <View style={[styles.grid, { gap }]}>
           {doctors.map((doctor, i) => (
             <Enter key={doctor.id} index={i} style={{ width: cardWidth }}>
               <DoctorCard
                 doctor={doctor}
+                width={cardWidth}
                 selected={pendingId === doctor.id}
                 locked={pendingId !== null}
                 onSelect={() => void choose(doctor)}
               />
             </Enter>
           ))}
-        </ScrollView>
+        </View>
       )}
-
-      <Enter index={2} style={styles.actions}>
-        <Button label={strings.doctor.changeDepartment} variant="quiet" icon="arrow-left" disabled={pendingId !== null} onPress={() => router.back()} />
-      </Enter>
-
-      {toast ? <Toast key={toast} message={toast} /> : null}
-    </View>
+    </PickFrame>
   );
 }
 
@@ -183,6 +195,8 @@ const PILL: Record<AvailabilityState, { icon: IconName; ink: string; wash: strin
 
 interface DoctorCardProps {
   doctor: KioskDoctor;
+  /** The card's own width: narrow cards use smaller type and put the select button under the facts. */
+  width: number;
   /** This card was tapped and its visit is being made: it lifts. */
   selected: boolean;
   /** Some card is being handled: none of them takes another tap. */
@@ -190,7 +204,9 @@ interface DoctorCardProps {
   onSelect: () => void;
 }
 
-function DoctorCard({ doctor, selected, locked, onSelect }: DoctorCardProps) {
+function DoctorCard({ doctor, width, selected, locked, onSelect }: DoctorCardProps) {
+  const layout = useLayout();
+  const metrics = doctorCardMetrics(width);
   const reduced = useReducedMotion();
   const lift = useSharedValue(0);
   useEffect(() => {
@@ -210,10 +226,10 @@ function DoctorCard({ doctor, selected, locked, onSelect }: DoctorCardProps) {
         highlight="rgba(30, 107, 255, 0.07)"
         accessibilityLabel={strings.doctor.cardLabel(doctor.name, doctor.qualifications, doctor.fee, doctor.room, availability.label, bookable)}
         accessibilityState={{ selected }}
-        style={[styles.card, !bookable && styles.cardOff, selected && styles.cardSelected]}
+        style={[styles.card, { padding: metrics.padding }, !bookable && styles.cardOff, selected && styles.cardSelected]}
       >
         <View style={styles.top}>
-          <Avatar name={doctor.name} size={88} />
+          <Avatar name={doctor.name} size={metrics.avatar} />
           <View style={styles.who}>
             <Text style={[styles.name, !bookable && styles.offInk]} numberOfLines={2}>
               {doctor.name}
@@ -222,10 +238,10 @@ function DoctorCard({ doctor, selected, locked, onSelect }: DoctorCardProps) {
               {doctor.qualifications}
             </Text>
           </View>
-          <Text style={[styles.fee, !bookable && styles.offInk]}>{strings.doctor.fee(doctor.fee)}</Text>
+          <Text style={[styles.fee, { fontSize: metrics.feeFont, lineHeight: metrics.feeLine }, !bookable && styles.offInk]}>{strings.doctor.fee(doctor.fee)}</Text>
         </View>
 
-        <View style={styles.bottom}>
+        <View style={[styles.bottom, metrics.narrow && styles.bottomNarrow]}>
           <View style={styles.facts}>
             <View style={[styles.pill, { backgroundColor: look.wash }]}>
               {availability.state === 'now' ? (
@@ -245,7 +261,7 @@ function DoctorCard({ doctor, selected, locked, onSelect }: DoctorCardProps) {
             </View>
           </View>
           {/* Looks like a button; the whole card is the one touch target. */}
-          <View style={[styles.select, bookable ? styles.selectOn : styles.selectOff]}>
+          <View style={[styles.select, { minHeight: layout.touchMin }, metrics.narrow && styles.selectNarrow, bookable ? styles.selectOn : styles.selectOff]}>
             <Text style={[styles.selectText, !bookable && { color: colors.textTertiary }]}>
               {selected ? strings.doctor.selecting : strings.doctor.select}
             </Text>
@@ -257,7 +273,8 @@ function DoctorCard({ doctor, selected, locked, onSelect }: DoctorCardProps) {
 }
 
 /** A short note over the bottom of the screen: "That doctor is no longer available." */
-function Toast({ message }: { message: string }) {
+function Toast({ message, inline = false, gutter = 0 }: { message: string; inline?: boolean; gutter?: number }) {
+  const layout = useLayout();
   const reduced = useReducedMotion();
   const entering = reduced
     ? FadeIn.duration(motion.duration.base).reduceMotion(ReduceMotion.Never)
@@ -266,7 +283,7 @@ function Toast({ message }: { message: string }) {
     <Animated.View
       entering={entering}
       exiting={FadeOut.duration(motion.duration.fast).reduceMotion(ReduceMotion.Never)}
-      style={styles.toast}
+      style={[inline ? styles.toastInline : [styles.toast, { left: gutter, right: gutter }], { minHeight: layout.touchMin }]}
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
       pointerEvents="none"
@@ -281,17 +298,19 @@ function Toast({ message }: { message: string }) {
 
 /** A cash payment already waits at the counter, or the session ended: say so plainly and let the patient finish. */
 function BlockedPanel({ blocked }: { blocked: Blocked }) {
+  const layout = useLayout();
+  const compact = layout.size === 'compact';
   const cash = blocked.kind === 'cash';
   const title = cash ? strings.doctor.cashPending.title : strings.doctor.sessionEnded.title;
   return (
-    <View style={styles.screen}>
-      <Enter style={styles.blocked}>
+    <Screen>
+      <Enter style={[styles.blocked, compact && styles.blockedCompact]}>
         <View accessibilityRole="alert" accessible accessibilityLabel={`${title}. ${blocked.message}`} style={styles.blockedCopy}>
           <View style={styles.blockedIcon}>
             <MaterialCommunityIcons name={cash ? 'cash-clock' : 'timer-off-outline'} size={52} color={colors.warningText} />
           </View>
-          <Text style={styles.blockedTitle}>{title}</Text>
-          <Text style={styles.blockedBody}>{blocked.message}</Text>
+          <Text style={[styles.blockedTitle, { fontSize: layout.type.title, lineHeight: Math.round(layout.type.title * 1.24) }]}>{title}</Text>
+          <Text style={[styles.blockedBody, { fontSize: layout.type.body + 2, lineHeight: Math.round((layout.type.body + 2) * 1.36) }]}>{blocked.message}</Text>
         </View>
         <Enter index={2}>
           <Button
@@ -299,35 +318,23 @@ function BlockedPanel({ blocked }: { blocked: Blocked }) {
             size="large"
             icon="check"
             onPress={() => useFlow.getState().resetFlow()}
-            style={styles.blockedButton}
+            style={compact ? undefined : styles.blockedButton}
           />
         </Enter>
       </Enter>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MAX_CONTENT_WIDTH,
-    alignSelf: 'center',
-    paddingHorizontal: sizes.screenGutter,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-    gap: spacing.lg,
-  },
-  scroll: { flex: 1, overflow: 'visible' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, paddingBottom: spacing.md },
-  skeleton: { height: 214, borderRadius: radii.lg },
+  grid: { flexDirection: 'row', flexWrap: 'wrap' },
+  skeleton: { borderRadius: radii.lg },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, boxShadow: shadows.card },
   emptyText: { ...typography.bodyLarge, color: colors.textSecondary, textAlign: 'center', maxWidth: 640 },
   actions: { flexDirection: 'row', justifyContent: 'flex-start' },
   dim: { opacity: 0.6 },
   card: {
     gap: spacing.md,
-    padding: 24,
     borderRadius: radii.lg,
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -343,24 +350,23 @@ const styles = StyleSheet.create({
   offInk: { color: colors.textSecondary },
   fee: { fontFamily: fonts.bold, fontSize: 30, lineHeight: 38, color: colors.primaryDark, fontVariant: ['tabular-nums'] },
   bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  bottomNarrow: { flexDirection: 'column', alignItems: 'stretch' },
   facts: { flex: 1, gap: 10 },
   pill: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 10, paddingHorizontal: 14, paddingVertical: 6, borderRadius: radii.pill },
   pillText: { ...typography.label, flexShrink: 1 },
   room: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 2 },
   roomText: { ...typography.caption, fontSize: 18, lineHeight: 24, color: colors.textSecondary },
-  select: { minWidth: 160, minHeight: sizes.touchMin, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, borderRadius: radii.md },
+  select: { minWidth: 160, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, borderRadius: radii.md },
+  selectNarrow: { minWidth: 0, alignSelf: 'stretch' },
   selectOn: { backgroundColor: colors.primary, boxShadow: shadows.primaryButton },
   selectOff: { backgroundColor: colors.surfaceSunken, borderWidth: 1.5, borderColor: colors.border },
   selectText: { ...typography.button, color: colors.textOnColor },
   toast: {
     position: 'absolute',
-    left: sizes.screenGutter,
-    right: sizes.screenGutter,
     bottom: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    minHeight: sizes.touchMin,
     paddingHorizontal: 20,
     borderRadius: radii.md,
     backgroundColor: colors.warningLight,
@@ -368,9 +374,21 @@ const styles = StyleSheet.create({
     borderColor: colors.warningBorder,
     boxShadow: shadows.lifted,
   },
+  toastInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: radii.md,
+    backgroundColor: colors.warningLight,
+    borderWidth: 1.5,
+    borderColor: colors.warningBorder,
+  },
   toastText: { ...typography.body, fontFamily: fonts.medium, color: colors.warningText, flexShrink: 1 },
   blocked: {
-    flex: 1,
+    flexGrow: 1,
+    minHeight: 320,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xl,
@@ -381,6 +399,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     boxShadow: shadows.card,
   },
+  blockedCompact: { gap: spacing.lg, padding: spacing.md },
   blockedCopy: { alignItems: 'center', gap: spacing.md, maxWidth: 760 },
   blockedIcon: { width: 104, height: 104, borderRadius: 52, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.warningLight },
   blockedTitle: { ...typography.title, color: colors.textPrimary, textAlign: 'center' },

@@ -9,14 +9,16 @@ import { payScreenGuard } from '../../flow/visitPolling';
 import { strings } from '../../i18n/strings';
 import { Enter } from '../../motion/Enter';
 import { useKioskApp } from '../../store/useKioskApp';
-import { colors, methodColors, radii, shadows, sizes, spacing, typography } from '../../theme/tokens';
+import { colors, methodColors, radii, shadows, spacing, typography } from '../../theme/tokens';
 import { withAlpha } from '../../theme/color';
 import { Button } from '../../ui/Button';
+import { copyType, heroType, MACHINE_BOX, machineScale } from '../../ui/paySizing';
 import { ClosedPanel, ReconnectNote } from '../../ui/PayParts';
 import { SampleStrip } from '../../ui/SampleStrip';
+import { Screen } from '../../ui/Screen';
 import { WaitingDots } from '../../ui/StatusPanel';
+import { useLayout } from '../../ui/useLayout';
 
-const MAX_CONTENT_WIDTH = 1480;
 const PURPLE = methodColors.CARD;
 
 /** Step 6, card: the machine does the work; this screen waits for its answer. */
@@ -29,24 +31,28 @@ export default function PayCard() {
 }
 
 function CardScreen({ visitId, fee }: { visitId: string; fee: number }) {
+  const layout = useLayout();
   const sample = useKioskApp((s) => s.config?.sample.payments === true);
   const { closed, reconnecting, simulating, simulateFailed, simulate, chooseAnother } = usePayWaiting(visitId);
 
   if (closed) return <ClosedPanel status={closed.status} />;
 
+  const { stacked, scale } = machineScale(layout);
+  const copy = copyType(layout);
   return (
-    <View style={styles.screen}>
+    <Screen>
+      <View style={[styles.body, stacked && styles.bodyStacked]}>
       <Enter style={styles.art}>
-        <CardMachine />
+        <CardMachine scale={scale} />
       </Enter>
 
-      <View style={styles.side}>
-        <Enter index={1} style={styles.copy}>
-          <Text style={styles.title} accessibilityRole="header">
+      <View style={[styles.side, stacked && styles.sideStacked]}>
+        <Enter index={1} style={[styles.copy, stacked && styles.copyStacked]}>
+          <Text style={[styles.title, heroType(layout)]} accessibilityRole="header">
             {strings.cardPay.title(fee)}
           </Text>
-          <Text style={styles.instruction}>{strings.cardPay.instruction}</Text>
-          <Text style={styles.hint}>{strings.cardPay.hint}</Text>
+          <Text style={[styles.instruction, { fontSize: layout.size === 'expanded' ? 26 : layout.type.subtitle + 2 }]}>{strings.cardPay.instruction}</Text>
+          <Text style={[styles.hint, copy]}>{strings.cardPay.hint}</Text>
         </Enter>
 
         <Enter index={2} style={styles.status}>
@@ -68,12 +74,13 @@ function CardScreen({ visitId, fee }: { visitId: string; fee: number }) {
           <Button label={strings.pay.chooseAnother} variant="secondary" icon="swap-horizontal" disabled={simulating} onPress={chooseAnother} />
         </Enter>
       </View>
-    </View>
+      </View>
+    </Screen>
   );
 }
 
 /** A card terminal drawn from icons: it breathes gently, and soft waves leave its screen. Still with reduced motion. */
-function CardMachine() {
+function CardMachine({ scale }: { scale: number }) {
   const reduced = useReducedMotion();
   const t = useSharedValue(0);
   useEffect(() => {
@@ -86,7 +93,9 @@ function CardMachine() {
   const glow = useAnimatedStyle(() => ({ opacity: reduced ? 0.18 : 0.1 + 0.18 * t.value, transform: [{ scale: reduced ? 1 : 1 + 0.12 * t.value }] }));
 
   return (
-    <View style={styles.machineBox} importantForAccessibility="no-hide-descendants">
+    <View style={{ width: MACHINE_BOX.width * scale, height: MACHINE_BOX.height * scale }} importantForAccessibility="no-hide-descendants">
+      {/* Drawn at 440 × 520 and scaled to the space it has. */}
+      <View style={[styles.machineBox, { left: (MACHINE_BOX.width * (scale - 1)) / 2, top: (MACHINE_BOX.height * (scale - 1)) / 2, transform: [{ scale }] }]}>
       <Animated.View style={[styles.glow, glow]} />
       <Animated.View style={[styles.machine, body]}>
         <View style={styles.machineScreen}>
@@ -99,24 +108,16 @@ function CardMachine() {
         </View>
         <View style={styles.slot} />
       </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MAX_CONTENT_WIDTH,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xl,
-    paddingHorizontal: sizes.screenGutter,
-    paddingVertical: spacing.md,
-  },
+  body: { flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
+  bodyStacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.md },
   art: { alignItems: 'center', justifyContent: 'center' },
-  machineBox: { width: 440, height: 520, alignItems: 'center', justifyContent: 'center' },
+  machineBox: { position: 'absolute', width: MACHINE_BOX.width, height: MACHINE_BOX.height, alignItems: 'center', justifyContent: 'center' },
   glow: { position: 'absolute', width: 420, height: 420, borderRadius: 210, backgroundColor: withAlpha(PURPLE, 0.25) },
   machine: {
     width: 250,
@@ -133,7 +134,9 @@ const styles = StyleSheet.create({
   key: { width: 54, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.16)' },
   slot: { position: 'absolute', bottom: 18, width: 150, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.3)' },
   side: { flex: 1, gap: spacing.lg, justifyContent: 'center' },
+  sideStacked: { flex: 0, gap: spacing.md },
   copy: { gap: 10 },
+  copyStacked: { alignItems: 'center' },
   title: { ...typography.hero, color: colors.textPrimary },
   instruction: { ...typography.headline, color: PURPLE },
   hint: { ...typography.bodyLarge, color: colors.textSecondary },

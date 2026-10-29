@@ -7,13 +7,15 @@ import { useTokenWait } from '../flow/useTokenWait';
 import { strings } from '../i18n/strings';
 import { Enter } from '../motion/Enter';
 import { feedback } from '../motion/feedback';
-import { colors, fonts, radii, shadows, sizes, spacing, typography } from '../theme/tokens';
+import { colors, fonts, radii, shadows, spacing, typography } from '../theme/tokens';
 import { Button } from '../ui/Button';
 import { CheckBurst } from '../ui/CheckBurst';
+import { copyType, heroType, paidSizes } from '../ui/paySizing';
 import { SampleStrip } from '../ui/SampleStrip';
+import { Screen } from '../ui/Screen';
 import { WaitingDots } from '../ui/StatusPanel';
+import { useLayout } from '../ui/useLayout';
 
-const MAX_CONTENT_WIDTH = 1480;
 /** The success moment is shown this long before the ticket takes over (Continue goes sooner). */
 const SHOW_MS = 3000;
 /** Details rise in once the check has drawn itself. */
@@ -21,6 +23,7 @@ const DETAILS_DELAY_MS = 450;
 
 /** Step 7: payment received. Never pays again: it only reads the visit until the token is there. */
 export default function Paid() {
+  const layout = useLayout();
   const visit = useFlow((s) => s.visit);
   const wait = useTokenWait();
   const advanced = useRef(false);
@@ -54,24 +57,27 @@ export default function Paid() {
   if (visit.method) rows.push({ label: strings.paid.mode, value: strings.paid.modes[visit.method] });
   if (visit.paidAtDisplay) rows.push({ label: strings.paid.when, value: visit.paidAtDisplay });
 
+  const sizes = paidSizes(layout);
+  const copy = copyType(layout);
   return (
-    <View style={styles.screen}>
-      <View style={styles.hero}>
-        <CheckBurst size={280} />
+    <Screen>
+      <View style={[styles.body, sizes.stacked && styles.bodyStacked]}>
+      <View style={[styles.hero, sizes.stacked && styles.heroStacked]}>
+        <CheckBurst size={sizes.check} />
         <Enter delay={DETAILS_DELAY_MS - 150} style={styles.heroText}>
-          <Text style={styles.title} accessibilityRole="header" accessibilityLiveRegion="polite">
+          <Text style={[styles.title, heroType(layout)]} accessibilityRole="header" accessibilityLiveRegion="polite">
             {strings.paid.title}
           </Text>
-          <Text style={styles.subtitle}>{wait === 'gave-up' ? strings.paid.noToken : strings.paid.subtitle}</Text>
+          <Text style={[styles.subtitle, copy]}>{wait === 'gave-up' ? strings.paid.noToken : strings.paid.subtitle}</Text>
         </Enter>
       </View>
 
-      <View style={styles.side}>
+      <View style={[styles.side, sizes.stacked && styles.sideStacked]}>
         <Enter delay={DETAILS_DELAY_MS} style={styles.card}>
           {rows.map((row, i) => (
-            <Enter key={row.label} index={i + 1} delay={DETAILS_DELAY_MS} style={[styles.row, i > 0 && styles.rowRule]}>
+            <Enter key={row.label} index={i + 1} delay={DETAILS_DELAY_MS} style={[styles.row, { minHeight: sizes.rowHeight }, i > 0 && styles.rowRule]}>
               <Text style={styles.rowLabel}>{row.label}</Text>
-              <Text style={styles.rowValue} numberOfLines={1}>
+              <Text style={[styles.rowValue, { fontSize: sizes.valueFont, lineHeight: Math.round(sizes.valueFont * 1.33) }]} numberOfLines={1}>
                 {row.value}
               </Text>
             </Enter>
@@ -111,29 +117,23 @@ export default function Paid() {
           )}
         </Enter>
       </View>
-    </View>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    width: '100%',
-    maxWidth: MAX_CONTENT_WIDTH,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xl,
-    paddingHorizontal: sizes.screenGutter,
-    paddingVertical: spacing.md,
-  },
+  body: { flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
+  bodyStacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.md },
   hero: { flex: 1, alignItems: 'center', gap: spacing.md },
+  heroStacked: { flex: 0 },
   heroText: { alignItems: 'center', gap: 6 },
   title: { ...typography.hero, color: colors.success, textAlign: 'center' },
   subtitle: { ...typography.bodyLarge, color: colors.textSecondary, textAlign: 'center', maxWidth: 480 },
   side: { flex: 1, gap: spacing.md, justifyContent: 'center' },
+  sideStacked: { flex: 0 },
   card: { borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, boxShadow: shadows.card, paddingHorizontal: 28, paddingVertical: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 68 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
   rowRule: { borderTopWidth: 1, borderTopColor: colors.border },
   rowLabel: { ...typography.body, color: colors.textSecondary },
   rowValue: { fontFamily: fonts.semibold, fontSize: 24, lineHeight: 32, color: colors.textPrimary, fontVariant: ['tabular-nums'], flexShrink: 1, textAlign: 'right' },
