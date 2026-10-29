@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   askBody: { ...typography.body, fontSize: 18, lineHeight: 24, color: colors.textSecondary },
   footer: {},
   help: { ...StyleSheet.absoluteFill, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  helpText: { ...typography.body, color: colors.textSecondary },
+  helpText: { ...typography.body, color: colors.textSecondary, flexShrink: 1 },
   notice: {
     ...StyleSheet.absoluteFill,
     flexDirection: 'row',
