@@ -33,6 +33,22 @@ export function welcomeTilesDense(l: Layout): boolean {
   return ((contentWidth(l) - 24) * 10) / 21 < ROW_TILE_DENSE_MAX;
 }
 
+/** The patient card's details column needs this much width for two facts side by side ("26 Sep 2026 11:30 AM" at 26 sp). */
+export const PATIENT_FACTS_TWO_MIN = 600;
+
+/**
+ * Whether the patient card shows its facts two to a row. The details column is what is left beside the
+ * identity block (40% of the content, at most 400) and the divider, less its padding (16 on a short
+ * window, 40 otherwise). A phone upright stacks the card and lists the facts one per row.
+ */
+export function patientFactsTwoColumns(l: Layout): boolean {
+  if (l.size === 'compact') return false;
+  const available = contentWidth(l);
+  const identity = fit(400, Math.round(available * 0.4));
+  const padding = l.short ? 16 : 40;
+  return available - identity - 1 - 2 * padding >= PATIENT_FACTS_TWO_MIN;
+}
+
 /** Height of one number key: tighter on a phone on its side. */
 export function keyHeight(l: Layout): number {
   if (l.short) return l.touchMin;

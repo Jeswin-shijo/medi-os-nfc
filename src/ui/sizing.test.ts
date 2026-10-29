@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { layoutFor } from './layout';
-import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, phoneMetrics, sideBySide, welcomeTilesDense } from './sizing';
+import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, patientFactsTwoColumns, phoneMetrics, sideBySide, welcomeTilesDense } from './sizing';
 
 test('fit keeps the tablet size where there is room and shrinks where there is not', () => {
   assert.equal(fit(460, 1200), 460);
@@ -76,4 +76,15 @@ test('Welcome row tiles go dense where their column is narrow, so the title and 
   assert.equal(welcomeTilesDense(layoutFor(1024, 640)), true);
   // A phone upright stacks the tiles full width (it already uses the compact tile).
   assert.equal(welcomeTilesDense(layoutFor(427, 952)), false);
+});
+
+test('patient facts sit two to a row only where "48 years · Female" and "26 Sep 2026 11:30 AM" fit', () => {
+  assert.equal(patientFactsTwoColumns(layoutFor(1280, 800)), true);
+  assert.equal(patientFactsTwoColumns(layoutFor(1920, 1200)), true);
+  // Tablet upright, small tablet on its side and a phone on its side cut them short in two columns.
+  assert.equal(patientFactsTwoColumns(layoutFor(800, 1280)), false);
+  assert.equal(patientFactsTwoColumns(layoutFor(1024, 640)), false);
+  assert.equal(patientFactsTwoColumns(layoutFor(952, 427)), false);
+  // A phone upright stacks the card; its facts are one per row already.
+  assert.equal(patientFactsTwoColumns(layoutFor(427, 952)), false);
 });
