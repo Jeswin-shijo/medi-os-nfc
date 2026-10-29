@@ -10,24 +10,25 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFlow } from '../flow/useFlow';
 import { InactivityGuard } from '../flow/useInactivity';
 import { strings } from '../i18n/strings';
 import { feedback } from '../motion/feedback';
 import { useEndStaffOutsideStaff } from '../staff/useStaffGuard';
 import { useKioskApp } from '../store/useKioskApp';
-import { colors, fonts, radii } from '../theme/tokens';
+import { colors, fonts, radii, sizes } from '../theme/tokens';
 import { KioskShell } from '../ui/KioskShell';
 
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const firstSegment = (useSegments() as string[])[0];
-  // Setup and the staff menu work even while the server cannot be reached.
+  // Setup and the staff menu need no server answer, so the offline cover stays off them.
   const onSetup = firstSegment === 'setup' || firstSegment === 'staff';
   const [fontsLoaded, fontError] = useFonts({ IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, IBMPlexSans_700Bold });
-  const { status, loadError, reload } = useKioskApp();
+  const { status, loadError, reload, address } = useKioskApp();
+  const hasServer = address !== '';
   const resetting = useFlow((s) => s.resetting);
   const reduced = useReducedMotion();
   useEndStaffOutsideStaff();
@@ -74,28 +75,36 @@ export default function RootLayout() {
               <Stack.Screen name="pay/card" />
               <Stack.Screen name="paid" />
               <Stack.Screen name="ticket" />
-              {/* Staff sign-in, card linking and the printer need the server address of a configured kiosk. */}
+            </Stack.Protected>
+            {/* First: a fresh install, or a kiosk whose key was removed, opens here. */}
+            <Stack.Screen name="setup" />
+            {/* Staff sign-in needs the server address the kiosk has stored (a kiosk without its key still has it). */}
+            <Stack.Protected guard={hasServer}>
               <Stack.Screen name="staff/index" />
               <Stack.Screen name="staff/link-card" />
               <Stack.Screen name="staff/printer" />
+              <Stack.Screen name="staff/setup" />
             </Stack.Protected>
-            {/* Always reachable: first-run setup, and the staff "Kiosk setup" (it signs in first, so it also serves a kiosk whose key was removed). */}
-            <Stack.Screen name="setup" />
-            <Stack.Screen name="staff/setup" />
           </Stack>
         </KioskShell>
       </InactivityGuard>
-      {status === 'offline' && !onSetup ? (
-        <View style={styles.offline}>
-          <Text style={styles.offlineTitle}>{strings.offline.title}</Text>
-          <Text style={styles.offlineText}>{loadError ?? strings.errors.network}</Text>
-          <Pressable style={styles.retry} accessibilityRole="button" onPress={() => void reload()}>
-            <Text style={styles.retryText}>{strings.offline.retry}</Text>
-          </Pressable>
-          <Text style={styles.hint}>{strings.offline.staffHint}</Text>
-        </View>
-      ) : null}
+      {status === 'offline' && !onSetup ? <OfflineOverlay message={loadError ?? strings.errors.network} onRetry={() => void reload()} /> : null}
     </SafeAreaProvider>
+  );
+}
+
+/** Covers the screen below the header band: the logo stays reachable, so staff can still hold it for the staff menu. */
+function OfflineOverlay({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.offline, { top: sizes.headerHeight + insets.top }]}>
+      <Text style={styles.offlineTitle}>{strings.offline.title}</Text>
+      <Text style={styles.offlineText}>{message}</Text>
+      <Pressable style={styles.retry} accessibilityRole="button" onPress={onRetry}>
+        <Text style={styles.retryText}>{strings.offline.retry}</Text>
+      </Pressable>
+      <Text style={styles.hint}>{strings.offline.staffHint}</Text>
+    </View>
   );
 }
 

@@ -1,13 +1,15 @@
 import { router, usePathname } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { isUnder } from '../flow/steps';
+import { useKioskApp } from '../store/useKioskApp';
 import { staffSecondsLeft, staffSessionExpired } from './session';
 import { useStaffSession } from './useStaffSession';
 
 /** Signs out and goes back to the patient screen. */
 export function leaveStaffMode(): void {
   useStaffSession.getState().end();
-  router.dismissTo('/');
+  // A kiosk whose key was removed has no patient screens: back to its "removed" screen.
+  router.dismissTo(useKioskApp.getState().status === 'unconfigured' ? '/setup' : '/');
 }
 
 /**
@@ -45,10 +47,16 @@ export function useStaffGuard(requireSession: boolean): number {
   return seconds;
 }
 
-/** Whoever is signed in is signed out the moment the app leaves the staff screens (a pending setup link stays). */
+/**
+ * Whoever is signed in is signed out the moment the app leaves the staff screens. A setup link
+ * waiting for confirmation survives only the hop through /setup (that is how it gets to staff
+ * sign-in); anywhere else it is dropped, so a stale link never resurfaces hours later.
+ */
 export function useEndStaffOutsideStaff(): void {
   const pathname = usePathname();
   useEffect(() => {
-    if (!isUnder(pathname, '/staff')) useStaffSession.getState().signOut();
+    if (isUnder(pathname, '/staff')) return;
+    if (pathname === '/setup') useStaffSession.getState().signOut();
+    else useStaffSession.getState().end();
   }, [pathname]);
 }

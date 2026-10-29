@@ -7,6 +7,17 @@ const SILENCE_CHECK_MS = 140;
 /** Long enough for a real text field that took the focus to be the focused one. */
 const REFOCUS_DELAY_MS = 80;
 
+const refocusListeners = new Set<() => void>();
+
+/**
+ * Asks any mounted reader field to take the focus back (unless a real field has it). For after a
+ * screen blurred a text field itself: `keyboardDidHide` does not fire when the keyboard was
+ * already hidden, so the field cannot find out alone.
+ */
+export function refocusCardReader(): void {
+  refocusListeners.forEach((listener) => listener());
+}
+
 interface UsbReaderInputProps {
   onCard: (cardId: string) => void;
 }
@@ -40,7 +51,13 @@ export function UsbReaderInput({ onCard }: UsbReaderInputProps) {
       clearTimeout(refocusTimer.current);
       refocusTimer.current = setTimeout(() => focusUnlessTaken(ref.current), REFOCUS_DELAY_MS);
     });
+    const ask = () => {
+      clearTimeout(refocusTimer.current);
+      refocusTimer.current = setTimeout(() => focusUnlessTaken(ref.current), REFOCUS_DELAY_MS);
+    };
+    refocusListeners.add(ask);
     return () => {
+      refocusListeners.delete(ask);
       sub.remove();
       hide.remove();
       clearTimeout(silenceTimer.current);

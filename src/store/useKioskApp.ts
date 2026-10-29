@@ -12,6 +12,7 @@ import {
 } from '../config/kioskConfigStore';
 import { serverSkewMs } from '../flow/visitPolling';
 import { strings } from '../i18n/strings';
+import { shouldClearRevokedKey } from './revoked';
 
 type Status = 'loading' | 'unconfigured' | 'offline' | 'ready';
 
@@ -42,16 +43,19 @@ export const useKioskApp = create<KioskAppState>((set, get) => {
       try {
         return await call;
       } catch (err) {
-        if (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED') await revoke(settings.apiUrl);
+        if (err instanceof KioskApiError && err.code === 'KIOSK_REVOKED') await revoke(settings);
         throw err;
       }
     };
     return { get: (path) => guard(inner.get(path)), post: (path, body) => guard(inner.post(path, body)) };
   }
 
-  async function revoke(apiUrl: string): Promise<void> {
+  async function revoke(revoked: StoredKioskConfig): Promise<void> {
+    // A late answer to an old request (before staff changed the key or server) must not wipe the new key.
+    const stored = await loadKioskConfig().catch(() => null);
+    if (!shouldClearRevokedKey(stored, revoked)) return;
     await clearKioskKey().catch(() => undefined);
-    set({ status: 'unconfigured', config: null, client: null, api: null, notice: strings.errors.revoked, address: apiUrl });
+    set({ status: 'unconfigured', config: null, client: null, api: null, notice: strings.errors.revoked, address: revoked.apiUrl });
   }
 
   async function open(settings: StoredKioskConfig): Promise<void> {

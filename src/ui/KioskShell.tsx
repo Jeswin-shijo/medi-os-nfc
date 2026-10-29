@@ -34,7 +34,8 @@ export function KioskShell({ children }: { children: ReactNode }) {
   const inFlow = step !== null;
 
   const openStaff = () => {
-    if (pathname === '/setup' || isUnder(pathname, '/staff')) return;
+    // Staff sign-in needs the server address the kiosk has stored (none on a fresh install).
+    if (isUnder(pathname, '/staff') || !useKioskApp.getState().address) return;
     feedback.tap();
     router.push('/staff');
   };

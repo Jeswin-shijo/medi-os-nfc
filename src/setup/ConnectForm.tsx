@@ -11,7 +11,7 @@ interface ConnectFormProps {
   intro?: string;
   /** Called after the server accepted the settings and they were saved. */
   onConnected: () => void;
-  /** A setup link to apply as soon as it arrives (first-time setup only: see decideSetupLink). */
+  /** A setup link to apply as soon as it arrives (fresh install only: see decideSetupScreen). */
   autoLink?: SetupLink | null;
   /** Shown above the form (a bad link, say). */
   linkError?: string | null;

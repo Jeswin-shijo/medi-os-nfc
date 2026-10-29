@@ -5,20 +5,19 @@ import { decideSetupScreen, hostOfApiUrl } from './setupLinkPolicy';
 const LINK = { apiUrl: 'http://h.test/api', key: 'mqk_x' };
 
 describe('decideSetupScreen', () => {
-  it('applies the first setup link of a kiosk without a key', () => {
-    assert.equal(decideSetupScreen({ hasKey: false, link: LINK }), 'apply');
+  it('a fresh install (nothing stored) applies a valid link, else shows the open form', () => {
+    assert.equal(decideSetupScreen({ hasKey: false, hadServer: false, link: LINK }), 'apply');
+    assert.equal(decideSetupScreen({ hasKey: false, hadServer: false, link: null }), 'manual-form');
   });
 
-  it('shows the open form to a kiosk without a key when there is no (valid) link', () => {
-    assert.equal(decideSetupScreen({ hasKey: false, link: null }), 'manual-form');
+  it('a kiosk whose key was removed (server still stored) never shows the open form', () => {
+    assert.equal(decideSetupScreen({ hasKey: false, hadServer: true, link: null }), 'removed');
+    assert.equal(decideSetupScreen({ hasKey: false, hadServer: true, link: LINK }), 'confirm-with-staff');
   });
 
-  it('makes a kiosk that has a key wait for staff to confirm a valid link', () => {
-    assert.equal(decideSetupScreen({ hasKey: true, link: LINK }), 'confirm-with-staff');
-  });
-
-  it('sends a kiosk that has a key to staff sign-in when there is no valid link: never the open form', () => {
-    assert.equal(decideSetupScreen({ hasKey: true, link: null }), 'staff');
+  it('a kiosk that has a key waits for staff to confirm a valid link, and sends anything else to staff sign-in', () => {
+    assert.equal(decideSetupScreen({ hasKey: true, hadServer: true, link: LINK }), 'confirm-with-staff');
+    assert.equal(decideSetupScreen({ hasKey: true, hadServer: true, link: null }), 'staff');
   });
 });
 

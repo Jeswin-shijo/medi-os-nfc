@@ -5,6 +5,8 @@ import NfcProxy from '../nfc/NfcProxy';
 import { RepeatGuard, tagIdToCardId } from './cardId';
 import { UsbReaderInput } from './UsbReaderInput';
 
+export { refocusCardReader } from './UsbReaderInput';
+
 /** The same card again within this long is the same tap (held on the reader, or read twice). */
 const REPEAT_MS = 2000;
 

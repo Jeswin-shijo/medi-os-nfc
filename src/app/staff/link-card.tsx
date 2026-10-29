@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Keyboard, StyleSheet, Text, View } from 'react-native';
 import { KioskApiError } from '../../api/client';
 import { linkCard, searchPatients, type StaffPatient } from '../../api/staff';
-import { useCardTap } from '../../card/useCardTap';
+import { refocusCardReader, useCardTap } from '../../card/useCardTap';
 import { strings } from '../../i18n/strings';
 import { feedback } from '../../motion/feedback';
 import { PressableScale } from '../../motion/Pressable';
@@ -88,6 +88,7 @@ export default function LinkCardScreen() {
       setConflict(null);
       setQ('');
       Keyboard.dismiss();
+      refocusCardReader();
     } catch (err) {
       feedback.error();
       if (err instanceof KioskApiError && err.code === 'CARD_LINKED_ELSEWHERE') setConflict(err.message);
@@ -128,7 +129,10 @@ export default function LinkCardScreen() {
           }}
           autoCapitalize="none"
           autoCorrect={false}
-          onSubmitEditing={() => Keyboard.dismiss()}
+          onSubmitEditing={() => {
+            Keyboard.dismiss();
+            refocusCardReader();
+          }}
         />
         {searching && searchActive ? <ActivityIndicator color={colors.primary} /> : null}
         {searchError && searchActive ? <Notice tone="error">{searchError}</Notice> : null}
@@ -142,6 +146,7 @@ export default function LinkCardScreen() {
                 touch();
                 // The search box lets go, so the next card goes to the reader and not into the query.
                 Keyboard.dismiss();
+                refocusCardReader();
                 setPicked(p);
                 setConflict(null);
               }}
