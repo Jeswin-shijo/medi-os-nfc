@@ -12,6 +12,8 @@ interface StaffSessionState {
   pendingLink: SetupLink | null;
   signIn: (token: string, user: StaffUser) => void;
   touch: () => void;
+  /** Forget who is signed in, keeping a setup link that waits for confirmation. */
+  signOut: () => void;
   end: () => void;
   holdSetupLink: (link: SetupLink) => void;
   dropSetupLink: () => void;
@@ -24,6 +26,7 @@ export const useStaffSession = create<StaffSessionState>((set) => ({
   pendingLink: null,
   signIn: (token, user) => set({ token, user, lastActive: Date.now() }),
   touch: () => set({ lastActive: Date.now() }),
+  signOut: () => set({ token: null, user: null }),
   // Ending the session also drops a link that was never confirmed.
   end: () => set({ token: null, user: null, pendingLink: null }),
   holdSetupLink: (link) => set({ pendingLink: link, lastActive: Date.now() }),

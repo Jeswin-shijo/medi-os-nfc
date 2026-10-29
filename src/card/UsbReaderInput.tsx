@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, StyleSheet, TextInput } from 'react-native';
+import { AppState, Keyboard, StyleSheet, TextInput } from 'react-native';
 import { UsbReaderBuffer } from './cardId';
 
 /** Checked just after the buffer's 120 ms of silence, for readers that send no Enter. */
@@ -35,8 +35,14 @@ export function UsbReaderInput({ onCard }: UsbReaderInputProps) {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') focusUnlessTaken(ref.current);
     });
+    // A real field gave up the focus (staff closed the keyboard): the reader listens again.
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      clearTimeout(refocusTimer.current);
+      refocusTimer.current = setTimeout(() => focusUnlessTaken(ref.current), REFOCUS_DELAY_MS);
+    });
     return () => {
       sub.remove();
+      hide.remove();
       clearTimeout(silenceTimer.current);
       clearTimeout(refocusTimer.current);
     };

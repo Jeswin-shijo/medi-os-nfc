@@ -23,7 +23,7 @@ export default function StaffSetupScreen() {
   if (changing) {
     return (
       <StaffFrame title={strings.staff.setup.changeKeyTitle} scroll={false} onBack={() => setChanging(false)}>
-        <ConnectForm title={strings.staff.setup.changeKeyTitle} intro={strings.staff.setup.changeKeyIntro} onActivity={touch} onConnected={() => setChanging(false)} />
+        <ConnectForm title={strings.staff.setup.changeKeyTitle} intro={strings.staff.setup.changeKeyIntro} onActivity={touch} onConnected={leaveStaffMode} />
       </StaffFrame>
     );
   }

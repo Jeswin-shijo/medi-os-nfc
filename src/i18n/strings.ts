@@ -23,7 +23,7 @@ export const strings = {
   offline: {
     title: 'Cannot reach the hospital server',
     retry: 'Try again',
-    changeSetup: 'Change kiosk settings',
+    staffHint: 'Staff: press and hold the hospital logo.',
   },
   welcome: {
     title: (hospital: string) => (hospital ? `Welcome to ${hospital}` : 'Welcome'),
@@ -321,7 +321,7 @@ export const strings = {
       title: 'Link a card',
       tapNow: 'Tap the card now',
       tapHint: 'Hold the card on the reader. The reader types its number.',
-      cardRead: (last4: string) => `Card read: ...${last4}`,
+      cardRead: (last4: string) => `Card read: \u2026${last4}`,
       readAgain: 'Tap a different card to replace it.',
       searchLabel: 'Find the patient',
       searchPlaceholder: 'Name, UHID or phone',
@@ -331,7 +331,7 @@ export const strings = {
       linking: 'Linking...',
       move: 'Move card to this patient',
       moveBody: 'This card belongs to someone else. Move it only if the card was handed on or linked by mistake.',
-      linked: (last4: string, name: string, uhid: string) => `Card ...${last4} linked to ${name} (${uhid})`,
+      linked: (last4: string, name: string, uhid: string) => `Card \u2026${last4} linked to ${name} (${uhid})`,
     },
     printer: {
       title: 'Printer',

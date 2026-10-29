@@ -9,6 +9,10 @@ export function StaffField({ label, onChangeText, ...rest }: TextInputProps & { 
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
+        // Staff credentials are never offered to, or saved by, Android's autofill.
+        importantForAutofill="no"
+        autoComplete="off"
+        textContentType="none"
         {...rest}
         accessibilityLabel={label}
         placeholderTextColor={colors.textMuted}

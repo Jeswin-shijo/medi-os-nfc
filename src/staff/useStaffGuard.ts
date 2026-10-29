@@ -1,5 +1,6 @@
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { isUnder } from '../flow/steps';
 import { staffSecondsLeft, staffSessionExpired } from './session';
 import { useStaffSession } from './useStaffSession';
 
@@ -20,6 +21,9 @@ export function useStaffGuard(requireSession: boolean): number {
   const leaving = useRef(false);
 
   useEffect(() => {
+    // A session that ran out while no staff screen was open is over: opening a screen never revives it.
+    const { lastActive, token: held, end } = useStaffSession.getState();
+    if (held && staffSessionExpired(lastActive, Date.now())) end();
     useStaffSession.getState().touch();
     leaving.current = false;
     const timer = setInterval(() => {
@@ -39,4 +43,12 @@ export function useStaffGuard(requireSession: boolean): number {
   }, [requireSession, token]);
 
   return seconds;
+}
+
+/** Whoever is signed in is signed out the moment the app leaves the staff screens (a pending setup link stays). */
+export function useEndStaffOutsideStaff(): void {
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!isUnder(pathname, '/staff')) useStaffSession.getState().signOut();
+  }, [pathname]);
 }

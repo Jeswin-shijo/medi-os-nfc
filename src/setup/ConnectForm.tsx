@@ -104,6 +104,9 @@ export function ConnectForm({ title = strings.setup.title, intro = strings.setup
             autoCapitalize="none"
             autoCorrect={false}
             secureTextEntry
+            importantForAutofill="no"
+            autoComplete="off"
+            textContentType="none"
             editable={!busy}
             onSubmitEditing={onConnect}
           />

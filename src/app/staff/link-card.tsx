@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Keyboard, StyleSheet, Text, View } from 'react-native';
 import { KioskApiError } from '../../api/client';
 import { linkCard, searchPatients, type StaffPatient } from '../../api/staff';
 import { useCardTap } from '../../card/useCardTap';
@@ -87,6 +87,7 @@ export default function LinkCardScreen() {
       setPicked(null);
       setConflict(null);
       setQ('');
+      Keyboard.dismiss();
     } catch (err) {
       feedback.error();
       if (err instanceof KioskApiError && err.code === 'CARD_LINKED_ELSEWHERE') setConflict(err.message);
@@ -127,6 +128,7 @@ export default function LinkCardScreen() {
           }}
           autoCapitalize="none"
           autoCorrect={false}
+          onSubmitEditing={() => Keyboard.dismiss()}
         />
         {searching && searchActive ? <ActivityIndicator color={colors.primary} /> : null}
         {searchError && searchActive ? <Notice tone="error">{searchError}</Notice> : null}
@@ -138,6 +140,8 @@ export default function LinkCardScreen() {
               key={p.uhid}
               onPress={() => {
                 touch();
+                // The search box lets go, so the next card goes to the reader and not into the query.
+                Keyboard.dismiss();
                 setPicked(p);
                 setConflict(null);
               }}
@@ -157,7 +161,7 @@ export default function LinkCardScreen() {
         <StaffCard>
           <Notice tone="error">{conflict}</Notice>
           <Text style={styles.hint}>{strings.staff.link.moveBody}</Text>
-          <Button label={strings.staff.link.move} variant="secondary" icon="swap-horizontal" loading={linking} onPress={() => void link(true)} />
+          <Button label={strings.staff.link.move} variant="secondary" icon="swap-horizontal" disabled={!cardId || !picked} loading={linking} onPress={() => void link(true)} />
         </StaffCard>
       ) : null}
       {error ? <Notice tone="error">{error}</Notice> : null}

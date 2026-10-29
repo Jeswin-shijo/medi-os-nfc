@@ -1,14 +1,24 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { decideSetupLink, hostOfApiUrl } from './setupLinkPolicy';
+import { decideSetupScreen, hostOfApiUrl } from './setupLinkPolicy';
 
-describe('decideSetupLink', () => {
-  it('applies the first setup link without sign-in', () => {
-    assert.equal(decideSetupLink({ hasKey: false }), 'apply');
+const LINK = { apiUrl: 'http://h.test/api', key: 'mqk_x' };
+
+describe('decideSetupScreen', () => {
+  it('applies the first setup link of a kiosk without a key', () => {
+    assert.equal(decideSetupScreen({ hasKey: false, link: LINK }), 'apply');
   });
 
-  it('makes a kiosk that already has a key wait for a staff sign-in and confirmation', () => {
-    assert.equal(decideSetupLink({ hasKey: true }), 'staff-confirm');
+  it('shows the open form to a kiosk without a key when there is no (valid) link', () => {
+    assert.equal(decideSetupScreen({ hasKey: false, link: null }), 'manual-form');
+  });
+
+  it('makes a kiosk that has a key wait for staff to confirm a valid link', () => {
+    assert.equal(decideSetupScreen({ hasKey: true, link: LINK }), 'confirm-with-staff');
+  });
+
+  it('sends a kiosk that has a key to staff sign-in when there is no valid link: never the open form', () => {
+    assert.equal(decideSetupScreen({ hasKey: true, link: null }), 'staff');
   });
 });
 

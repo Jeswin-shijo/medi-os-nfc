@@ -5,7 +5,7 @@ import {
   IBMPlexSans_700Bold,
   useFonts,
 } from '@expo-google-fonts/ibm-plex-sans';
-import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
+import { SplashScreen, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -15,6 +15,7 @@ import { useFlow } from '../flow/useFlow';
 import { InactivityGuard } from '../flow/useInactivity';
 import { strings } from '../i18n/strings';
 import { feedback } from '../motion/feedback';
+import { useEndStaffOutsideStaff } from '../staff/useStaffGuard';
 import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts, radii } from '../theme/tokens';
 import { KioskShell } from '../ui/KioskShell';
@@ -22,7 +23,6 @@ import { KioskShell } from '../ui/KioskShell';
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const router = useRouter();
   const firstSegment = (useSegments() as string[])[0];
   // Setup and the staff menu work even while the server cannot be reached.
   const onSetup = firstSegment === 'setup' || firstSegment === 'staff';
@@ -30,6 +30,7 @@ export default function RootLayout() {
   const { status, loadError, reload } = useKioskApp();
   const resetting = useFlow((s) => s.resetting);
   const reduced = useReducedMotion();
+  useEndStaffOutsideStaff();
 
   useEffect(() => {
     void reload();
@@ -91,9 +92,7 @@ export default function RootLayout() {
           <Pressable style={styles.retry} accessibilityRole="button" onPress={() => void reload()}>
             <Text style={styles.retryText}>{strings.offline.retry}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" onPress={() => router.push('/setup')}>
-            <Text style={styles.link}>{strings.offline.changeSetup}</Text>
-          </Pressable>
+          <Text style={styles.hint}>{strings.offline.staffHint}</Text>
         </View>
       ) : null}
     </SafeAreaProvider>
@@ -106,5 +105,5 @@ const styles = StyleSheet.create({
   offlineText: { fontFamily: fonts.regular, fontSize: 20, color: colors.textSecondary },
   retry: { backgroundColor: colors.primary, borderRadius: radii.md, paddingHorizontal: 40, height: 64, justifyContent: 'center' },
   retryText: { fontFamily: fonts.semibold, fontSize: 22, color: '#fff' },
-  link: { fontFamily: fonts.medium, fontSize: 16, color: colors.primary },
+  hint: { fontFamily: fonts.regular, fontSize: 16, color: colors.textTertiary },
 });

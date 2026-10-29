@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { strings } from '../i18n/strings';
 import { parseSetupLink } from '../lib/deeplink';
 import { ConnectForm } from '../setup/ConnectForm';
-import { decideSetupLink } from '../staff/setupLinkPolicy';
+import { decideSetupScreen } from '../staff/setupLinkPolicy';
 import { useStaffSession } from '../staff/useStaffSession';
 import { useKioskApp } from '../store/useKioskApp';
 
@@ -28,24 +28,28 @@ export default function SetupScreen() {
     return parseSetupLink(`medios-reception://setup?${query}`);
   }, [hasLinkParams, linkApi, linkKey, linkPrinter]);
 
-  // A kiosk that already has a key never takes a link by itself: a staff member signs in and confirms first.
-  // Decided from the kiosk as it was when this screen opened: connecting from the link gives the kiosk
+  // Decided from the kiosk as it was when this screen opened: connecting from a link gives the kiosk
   // a key, which must not turn its own link into a "needs staff" one.
   const [hadKeyOnArrival] = useState(hasKey);
-  const decision = decideSetupLink({ hasKey: hadKeyOnArrival });
-  const needsStaff = !!link && decision === 'staff-confirm';
+  const decision = decideSetupScreen({ hasKey: hadKeyOnArrival, link });
 
   useEffect(() => {
-    if (!link || decision !== 'staff-confirm') return;
-    holdLink(link);
-    router.replace('/staff');
-  }, [link, decision, holdLink, router]);
+    if (decision === 'confirm-with-staff' && link) {
+      holdLink(link);
+      router.replace('/staff');
+    } else if (decision === 'staff') {
+      router.replace('/staff');
+    }
+  }, [decision, link, holdLink, router]);
+
+  // The open form is for a kiosk with no key only.
+  if (decision === 'confirm-with-staff' || decision === 'staff') return null;
 
   return (
     <ConnectForm
       onConnected={() => router.replace('/')}
-      autoLink={link && decision === 'apply' ? link : null}
-      linkError={hasLinkParams && !link && !needsStaff ? strings.setup.badLink : null}
+      autoLink={decision === 'apply' ? link : null}
+      linkError={hasLinkParams && !link ? strings.setup.badLink : null}
     />
   );
 }
