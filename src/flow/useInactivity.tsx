@@ -8,12 +8,15 @@ import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts, motion, radii, shadows, typography } from '../theme/tokens';
 import { Button } from '../ui/Button';
 import { useCountdown } from '../ui/Countdown';
+import { useLayout } from '../ui/useLayout';
 import { RingCountdown } from '../ui/RingCountdown';
 import { IdleClock, idleLimitSeconds, WARNING_SECONDS } from './inactivity';
 import { useFlow } from './useFlow';
 
 /** Used until the kiosk configuration (with its own idle limit) has loaded. */
 const DEFAULT_IDLE_SECONDS = 60;
+/** The question card is at most this wide (dp); narrower screens leave a gutter either side. */
+const CARD_MAX_WIDTH = 600;
 
 const activityListeners = new Set<() => void>();
 
@@ -73,6 +76,7 @@ export function InactivityGuard({ children }: { children: ReactNode }) {
 /** The "Are you still there?" dialog: a ring counting down 10 s. A touch anywhere keeps the patient's place. */
 export function StillThere({ onStay, onStartOver }: { onStay: () => void; onStartOver: () => void }) {
   const reduced = useReducedMotion();
+  const { width, gutter, short, type } = useLayout();
   const left = useCountdown(WARNING_SECONDS, onStartOver);
   const card = reduced
     ? FadeIn.duration(motion.duration.base).reduceMotion(ReduceMotion.Never)
@@ -89,19 +93,19 @@ export function StillThere({ onStay, onStartOver }: { onStay: () => void; onStar
       {/* A touch on the card itself (not on its buttons) also means "still here". */}
       <Animated.View
         entering={card}
-        style={styles.card}
+        style={[styles.card, { width: Math.min(CARD_MAX_WIDTH, width - 2 * gutter), paddingHorizontal: short ? 24 : 40, paddingTop: short ? 20 : 40, paddingBottom: short ? 20 : 32, gap: short ? 12 : 24 }]}
         accessibilityRole="alert"
         onStartShouldSetResponder={() => true}
         onResponderRelease={onStay}
       >
-        <RingCountdown seconds={WARNING_SECONDS} size={136} strokeWidth={10}>
+        <RingCountdown seconds={WARNING_SECONDS} size={short ? 96 : 136} strokeWidth={short ? 8 : 10}>
           <Text style={styles.number} accessibilityLabel={strings.idle.secondsLeft(left)}>
             {left}
           </Text>
         </RingCountdown>
         <View style={styles.copy}>
-          <Text style={styles.title}>{strings.idle.title}</Text>
-          <Text style={styles.body}>{strings.idle.body}</Text>
+          <Text style={[styles.title, { fontSize: type.title, lineHeight: Math.round(type.title * 1.25) }]}>{strings.idle.title}</Text>
+          <Text style={[styles.body, { fontSize: type.body, lineHeight: Math.round(type.body * 1.4) }]}>{strings.idle.body}</Text>
         </View>
         <View style={styles.actions}>
           <Button label={strings.idle.startOver} variant="secondary" icon="restart" onPress={onStartOver} style={styles.action} />
@@ -116,13 +120,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   scrim: { backgroundColor: colors.scrim, alignItems: 'center', justifyContent: 'center' },
   card: {
-    width: 600,
-    maxWidth: '90%',
     alignItems: 'center',
-    gap: 24,
-    paddingHorizontal: 40,
-    paddingTop: 40,
-    paddingBottom: 32,
     borderRadius: radii.xl,
     backgroundColor: colors.card,
     boxShadow: shadows.dialog,

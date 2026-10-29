@@ -8,28 +8,39 @@ import { always, easeOut } from '../motion/curves';
 import { colors, fonts, motion, radii, typography } from '../theme/tokens';
 
 const UNDERLINE_INSET = 28;
+const UNDERLINE_INSET_COMPACT = 12;
 
 /** Identify → Doctor → Pay → Ticket. Done steps tick green; a bar glides under the current one. */
-export function Stepper({ current }: { current: FlowStep }) {
+export function Stepper({ current, compact = false }: { current: FlowStep; compact?: boolean }) {
   const reduced = useReducedMotion();
   const [width, setWidth] = useState(0);
-  const segment = width / FLOW_STEPS.length;
+  const inset = compact ? UNDERLINE_INSET_COMPACT : UNDERLINE_INSET;
+  // On phones the current step is twice as wide, to hold its name; the others show only their number.
+  const weight = (i: number) => (compact && i === current ? 2 : 1);
+  const totalWeight = FLOW_STEPS.length + (compact ? 1 : 0);
+  const unit = width / totalWeight;
+  const start = FLOW_STEPS.slice(0, current).reduce((sum, _, i) => sum + weight(i), 0) * unit;
+  const span = weight(current) * unit;
   const x = useSharedValue(0);
+  const w = useSharedValue(0);
   const placed = useSharedValue(0);
 
   useEffect(() => {
-    if (!segment) return;
-    const to = current * segment + UNDERLINE_INSET;
+    if (!unit) return;
+    const to = start + inset;
+    const wide = span - inset * 2;
     // The first placement jumps; later steps glide (or fade across with reduced motion).
     if (!placed.value || reduced) {
       x.value = to;
+      w.value = wide;
       placed.value = withTiming(1, always(motion.duration.base));
     } else {
       x.value = withTiming(to, { duration: motion.duration.slow, easing: easeOut });
+      w.value = withTiming(wide, { duration: motion.duration.slow, easing: easeOut });
     }
-  }, [current, segment, reduced, x, placed]);
+  }, [start, span, unit, inset, reduced, x, w, placed]);
 
-  const underline = useAnimatedStyle(() => ({ opacity: placed.value, transform: [{ translateX: x.value }] }));
+  const underline = useAnimatedStyle(() => ({ opacity: placed.value, width: w.value, transform: [{ translateX: x.value }] }));
 
   return (
     <View style={styles.bar} onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)} accessibilityRole="summary">
@@ -38,17 +49,22 @@ export function Stepper({ current }: { current: FlowStep }) {
         return (
           <View
             key={name}
-            style={styles.segment}
+            style={[styles.segment, { flex: weight(i) }]}
             accessible
             accessibilityLabel={state === 'done' ? strings.stepDone(name) : state === 'current' ? strings.stepCurrent(name) : name}
           >
-            {i > 0 ? <View style={[styles.connector, i <= current && styles.connectorDone]} /> : null}
+            {i > 0 && !compact ? <View style={[styles.connector, i <= current && styles.connectorDone]} /> : null}
             <Marker index={i} state={state} reduced={reduced} />
-            <Text style={[styles.label, state === 'current' && styles.labelCurrent, state === 'done' && styles.labelDone]}>{name}</Text>
+            {/* On phones only the current step keeps its name. */}
+            {compact && state !== 'current' ? null : (
+              <Text style={[styles.label, state === 'current' && styles.labelCurrent, state === 'done' && styles.labelDone]} numberOfLines={1}>
+                {name}
+              </Text>
+            )}
           </View>
         );
       })}
-      {segment ? <Animated.View style={[styles.underline, { width: segment - UNDERLINE_INSET * 2 }, underline]} /> : null}
+      {unit ? <Animated.View style={[styles.underline, underline]} /> : null}
     </View>
   );
 }
@@ -71,7 +87,7 @@ function Marker({ index, state, reduced }: { index: number; state: 'done' | 'cur
 
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', alignSelf: 'stretch', height: '100%' },
-  segment: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  segment: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   connector: { position: 'absolute', left: -28, width: 56, top: '50%', height: 2, borderRadius: 1, backgroundColor: colors.border },
   connectorDone: { backgroundColor: colors.successBright },
   marker: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

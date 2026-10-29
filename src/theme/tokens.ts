@@ -61,7 +61,7 @@ export const fonts = {
 } as const;
 
 /**
- * Type scale (sp). Titles 34, body 20; the token number is the one display size.
+ * Type scale (sp) at tablet size: titles 34, body 20 (compact screens use `useLayout().type`); the token number is the one display size.
  * Line heights are explicit so rolling digits and boxes line up.
  */
 export const typography = {
@@ -81,7 +81,11 @@ export const radii = { xs: 6, sm: 10, md: 16, lg: 24, xl: 32, pill: 999 } as con
 
 export const spacing = { xxs: 2, xs: 4, sm: 8, md: 16, lg: 24, xl: 40, xxl: 56 } as const;
 
-/** Touch targets (dp). The brief's floor is 64 for buttons; number keys and tiles go larger. */
+/**
+ * Touch targets (dp) and gutters at tablet (expanded) size. The brief's floor is 64 for buttons;
+ * number keys and tiles go larger. Phones and small tablets scale these down: read the size-aware
+ * values (gutter, touchMin, type, header and tracker heights) from `useLayout()` (src/ui/layout.ts).
+ */
 export const sizes = {
   touchMin: 64,
   buttonLarge: 76,

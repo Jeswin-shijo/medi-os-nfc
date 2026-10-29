@@ -7,7 +7,6 @@ import {
 } from '@expo-google-fonts/ibm-plex-sans';
 import { useKeepAwake } from 'expo-keep-awake';
 import { NavigationBar } from 'expo-navigation-bar';
-import * as ScreenOrientation from 'expo-screen-orientation';
 import { router, SplashScreen, Stack, usePathname, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -21,8 +20,9 @@ import { strings } from '../i18n/strings';
 import { feedback } from '../motion/feedback';
 import { useEndStaffOutsideStaff } from '../staff/useStaffGuard';
 import { useKioskApp } from '../store/useKioskApp';
-import { colors, fonts, radii, sizes } from '../theme/tokens';
+import { colors, fonts, radii } from '../theme/tokens';
 import { KioskShell } from '../ui/KioskShell';
+import { useLayout } from '../ui/useLayout';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -98,13 +98,12 @@ export default function RootLayout() {
   );
 }
 
-/** Landscape lock, immersive mode (system bars hidden, a swipe from the edge shows them briefly), screen kept awake, and the Android Back button. */
+/** Immersive mode (system bars hidden, a swipe from the edge shows them briefly), screen kept awake, and the Android Back button. The screen rotates freely. */
 function useKioskMode() {
   useKeepAwake();
   const pathname = usePathname();
 
   useEffect(() => {
-    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
     NavigationBar.setHidden(true);
   }, []);
 
@@ -120,23 +119,24 @@ function useKioskMode() {
 /** Covers the screen below the header band: the logo stays reachable, so staff can still hold it for the staff menu. */
 function OfflineOverlay({ message, onRetry }: { message: string; onRetry: () => void }) {
   const insets = useSafeAreaInsets();
+  const { headerHeight, gutter, touchMin, type } = useLayout();
   return (
-    <View style={[styles.offline, { top: sizes.headerHeight + insets.top }]}>
-      <Text style={styles.offlineTitle}>{strings.offline.title}</Text>
-      <Text style={styles.offlineText}>{message}</Text>
-      <Pressable style={styles.retry} accessibilityRole="button" onPress={onRetry}>
+    <View style={[styles.offline, { top: headerHeight + insets.top, paddingHorizontal: gutter }]}>
+      <Text style={[styles.offlineTitle, { fontSize: type.title, lineHeight: Math.round(type.title * 1.25) }]}>{strings.offline.title}</Text>
+      <Text style={[styles.offlineText, { fontSize: type.body }]}>{message}</Text>
+      <Pressable style={[styles.retry, { height: touchMin }]} accessibilityRole="button" onPress={onRetry}>
         <Text style={styles.retryText}>{strings.offline.retry}</Text>
       </Pressable>
-      <Text style={styles.hint}>{strings.offline.staffHint}</Text>
+      <Text style={[styles.hint, { fontSize: type.label }]}>{strings.offline.staffHint}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   offline: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', gap: 16 },
-  offlineTitle: { fontFamily: fonts.bold, fontSize: 32, color: colors.textPrimary },
-  offlineText: { fontFamily: fonts.regular, fontSize: 20, color: colors.textSecondary },
-  retry: { backgroundColor: colors.primary, borderRadius: radii.md, paddingHorizontal: 40, height: 64, justifyContent: 'center' },
+  offlineTitle: { fontFamily: fonts.bold, color: colors.textPrimary, textAlign: 'center' },
+  offlineText: { fontFamily: fonts.regular, color: colors.textSecondary, textAlign: 'center' },
+  retry: { backgroundColor: colors.primary, borderRadius: radii.md, paddingHorizontal: 40, justifyContent: 'center' },
   retryText: { fontFamily: fonts.semibold, fontSize: 22, color: '#fff' },
-  hint: { fontFamily: fonts.regular, fontSize: 16, color: colors.textTertiary },
+  hint: { fontFamily: fonts.regular, color: colors.textTertiary, textAlign: 'center' },
 });

@@ -4,7 +4,7 @@
     "slug": "hospital-nfc-app",
     "scheme": "medios-reception",
     "version": "1.0.0",
-    "orientation": "landscape",
+    "orientation": "default",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
