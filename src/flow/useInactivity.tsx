@@ -1,5 +1,5 @@
 import { usePathname } from 'expo-router';
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, ReduceMotion, useReducedMotion, ZoomIn } from 'react-native-reanimated';
 import { strings } from '../i18n/strings';
@@ -9,7 +9,7 @@ import { colors, fonts, motion, radii, shadows, typography } from '../theme/toke
 import { Button } from '../ui/Button';
 import { useCountdown } from '../ui/Countdown';
 import { RingCountdown } from '../ui/RingCountdown';
-import { idleLimitSeconds, WARNING_SECONDS } from './inactivity';
+import { IdleClock, idleLimitSeconds, WARNING_SECONDS } from './inactivity';
 import { useFlow } from './useFlow';
 
 /** Used until the kiosk configuration (with its own idle limit) has loaded. */
@@ -28,51 +28,44 @@ export function markActive(): void {
 /**
  * Wraps the whole app: any touch restarts the idle clock for the current route
  * (`idleLimitSeconds`). When it runs out, "Are you still there?" counts down 10 s, then the
- * kiosk starts over (`resetFlow`).
+ * kiosk starts over (`resetFlow`). The question belongs to the screen it was asked on: when
+ * the screen changes by itself (a payment arrives), it goes away and the new screen starts fresh.
  */
 export function InactivityGuard({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const idleSeconds = useKioskApp((s) => s.config?.idleSeconds ?? DEFAULT_IDLE_SECONDS);
   const limit = idleLimitSeconds(pathname, { idleSeconds });
-  const [asking, setAsking] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [clock] = useState(() => new IdleClock());
+  const askedFor = useSyncExternalStore(clock.subscribe, clock.askedFor);
+  // Compared with the route being shown, so a question from the last screen never shows here,
+  // not even for the frame before the clock hears about the new screen.
+  const asking = askedFor === pathname;
 
-  const arm = useCallback(() => {
-    clearTimeout(timer.current);
-    if (limit !== null) timer.current = setTimeout(() => setAsking(true), limit * 1000);
-  }, [limit]);
-
-  /** A touch: a fresh clock, and the question goes away. */
-  const restart = useCallback(() => {
-    setAsking(false);
-    arm();
-  }, [arm]);
-
-  // Every new screen starts a fresh clock.
-  useEffect(() => {
-    arm();
-    return () => clearTimeout(timer.current);
-  }, [arm, pathname]);
+  // Every new screen: drop any question and start its own clock (before it paints).
+  useLayoutEffect(() => {
+    clock.enter(pathname, limit);
+  }, [clock, pathname, limit]);
 
   useEffect(() => {
-    activityListeners.add(restart);
+    activityListeners.add(clock.touch);
     return () => {
-      activityListeners.delete(restart);
+      activityListeners.delete(clock.touch);
+      clock.stop();
     };
-  }, [restart]);
+  }, [clock]);
 
   const timeUp = useCallback(() => {
-    setAsking(false);
+    clock.stop();
     useFlow.getState().resetFlow();
-  }, []);
+  }, [clock]);
 
   return (
     <View style={styles.fill}>
       {/* onTouchStart only watches: it never takes the touch from the control underneath. */}
-      <View style={styles.fill} onTouchStart={restart}>
+      <View style={styles.fill} onTouchStart={clock.touch}>
         {children}
       </View>
-      {asking ? <StillThere onStay={restart} onStartOver={timeUp} /> : null}
+      {asking ? <StillThere onStay={clock.touch} onStartOver={timeUp} /> : null}
     </View>
   );
 }
