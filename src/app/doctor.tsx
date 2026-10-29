@@ -242,7 +242,7 @@ function DoctorCard({ doctor, width, selected, locked, onSelect }: DoctorCardPro
         </View>
 
         <View style={[styles.bottom, metrics.narrow && styles.bottomNarrow]}>
-          <View style={styles.facts}>
+          <View style={metrics.narrow ? styles.factsNarrow : styles.facts}>
             <View style={[styles.pill, { backgroundColor: look.wash }]}>
               {availability.state === 'now' ? (
                 <LiveDot color={colors.successBright} size={10} />
@@ -351,7 +351,9 @@ const styles = StyleSheet.create({
   fee: { fontFamily: fonts.bold, fontSize: 30, lineHeight: 38, color: colors.primaryDark, fontVariant: ['tabular-nums'] },
   bottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   bottomNarrow: { flexDirection: 'column', alignItems: 'stretch' },
-  facts: { flex: 1, gap: 10 },
+  facts: { flexGrow: 1, flexShrink: 1, flexBasis: 0, gap: 10 },
+  // In the narrow card's column a zero basis would squash the facts under the button: they keep their own height.
+  factsNarrow: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto', gap: 10 },
   pill: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 10, paddingHorizontal: 14, paddingVertical: 6, borderRadius: radii.pill },
   pillText: { ...typography.label, flexShrink: 1 },
   room: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 2 },
