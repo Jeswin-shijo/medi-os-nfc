@@ -24,6 +24,7 @@ import { contentWidth } from '../ui/sizing';
 import { StepTitle } from '../ui/StepTitle';
 import { useShake } from '../ui/Shake';
 import { useLayout } from '../ui/useLayout';
+import { rowShare } from '../ui/layout';
 
 type Gender = RegisterInput['gender'];
 const GENDERS: { value: Gender; icon: IconName }[] = [
@@ -359,7 +360,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     boxShadow: shadows.card,
   },
-  columnBeside: { flex: 1 },
+  columnBeside: rowShare(),
   columnCompact: { gap: spacing.md, padding: spacing.md },
   field: { gap: 8 },
   label: { ...typography.label, color: colors.textSecondary },

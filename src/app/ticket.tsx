@@ -30,6 +30,7 @@ import { RollingNumber } from '../ui/RollingNumber';
 import { Screen } from '../ui/Screen';
 import { SLIP_WINDOW_PAD, ticketSizes, type TicketSizes } from '../ui/ticketSizing';
 import { useLayout } from '../ui/useLayout';
+import { rowShare } from '../ui/layout';
 
 /** Seconds without a touch before the ticket goes back to Welcome (the screen's own ring; the idle guard stays out). */
 const RETURN_SECONDS = 30;
@@ -95,7 +96,7 @@ function TicketScreen({ visit, token }: { visit: VisitView; token: KioskTokenVie
               {token.trackUrl ? (
                 <>
                   <QrView value={token.trackUrl} size={sizes.qr} accessibilityLabel={strings.ticket.scanTitle} />
-                  <View style={[styles.qrText, sizes.qrColumn && styles.qrTextColumn]}>
+                  <View style={[styles.qrText, sizes.qrColumn ? styles.qrTextColumn : styles.qrTextBeside]}>
                     <Text style={styles.qrTitle}>{strings.ticket.scanTitle}</Text>
                     <Text style={styles.qrBody}>{strings.ticket.scanBody}</Text>
                   </View>
@@ -105,7 +106,7 @@ function TicketScreen({ visit, token }: { visit: VisitView; token: KioskTokenVie
                   <View style={styles.waitIcon}>
                     <MaterialCommunityIcons name="seat-outline" size={40} color={colors.primaryDark} />
                   </View>
-                  <View style={[styles.qrText, sizes.qrColumn && styles.qrTextColumn]}>
+                  <View style={[styles.qrText, sizes.qrColumn ? styles.qrTextColumn : styles.qrTextBeside]}>
                     <Text style={styles.qrTitle}>{strings.ticket.noTrackTitle}</Text>
                     <Text style={styles.qrBody}>{strings.ticket.noTrackBody}</Text>
                   </View>
@@ -437,8 +438,9 @@ const styles = StyleSheet.create({
     boxShadow: shadows.card,
   },
   qrCardColumn: { flexDirection: 'column', gap: spacing.md },
-  qrText: { flex: 1, gap: 6 },
-  qrTextColumn: { flex: 0, alignSelf: 'stretch' },
+  qrText: { gap: 6 },
+  qrTextBeside: rowShare(),
+  qrTextColumn: { alignSelf: 'stretch' },
   qrTitle: { ...typography.headline, fontSize: 24, lineHeight: 30, color: colors.textPrimary },
   qrBody: { ...typography.body, fontSize: 18, lineHeight: 25, color: colors.textSecondary },
   waitIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primaryLight },

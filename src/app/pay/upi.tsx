@@ -18,6 +18,7 @@ import { Screen } from '../../ui/Screen';
 import { WaitingDots } from '../../ui/StatusPanel';
 import { useLayout } from '../../ui/useLayout';
 import { useKioskApp } from '../../store/useKioskApp';
+import { rowShare } from '../../ui/layout';
 
 /** Step 6, UPI: the QR inside a ring that empties as the order runs out. The server decides when it is paid. */
 export default function PayUpi() {
@@ -54,7 +55,7 @@ function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUr
         </RingCountdown>
       </Enter>
 
-      <View style={[styles.side, stacked && styles.sideStacked]}>
+      <View style={[styles.side, stacked ? styles.sideStacked : styles.sideBeside]}>
         <Enter index={1}>
           <Text style={[styles.title, hero, stacked && styles.titleStacked]} accessibilityRole="header">
             {strings.upi.title(fee)}
@@ -111,8 +112,9 @@ const styles = StyleSheet.create({
   body: { flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
   bodyStacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.lg },
   ringSlot: { alignItems: 'center', justifyContent: 'center' },
-  side: { flex: 1, gap: spacing.lg, justifyContent: 'center' },
-  sideStacked: { flex: 0, gap: spacing.md },
+  side: { gap: spacing.lg, justifyContent: 'center' },
+  sideBeside: rowShare(),
+  sideStacked: { gap: spacing.md },
   titleStacked: { textAlign: 'center' },
   title: { ...typography.hero, color: colors.textPrimary },
   steps: { gap: 12 },

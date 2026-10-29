@@ -51,6 +51,17 @@ const COLUMNS: Record<ColumnKind, readonly [number, number, number]> = {
 };
 const CONTENT_MAX_EXPANDED = 1480;
 
+/**
+ * A box's share of a row's free space, like `flex: grow`, for rows that a rotation can turn into columns
+ * (and back). `flex` gives a numeric flex basis, and React Native's Yoga keeps a box's first computed basis
+ * when its style changes: a box that sat in a column before the device turned keeps its old height as its
+ * basis in the row and runs off the screen. A zero width is a basis Yoga recomputes on every layout.
+ * Only for boxes whose parent is a row.
+ */
+export function rowShare(grow = 1) {
+  return { flexGrow: grow, flexShrink: 1, width: 0 } as const;
+}
+
 export function sizeClassFor(width: number): SizeClass {
   if (width < MEDIUM_MIN_WIDTH) return 'compact';
   return width < EXPANDED_MIN_WIDTH ? 'medium' : 'expanded';

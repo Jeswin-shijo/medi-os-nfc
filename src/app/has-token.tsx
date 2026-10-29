@@ -15,6 +15,7 @@ import { Screen } from '../ui/Screen';
 import { contentWidth, fit } from '../ui/sizing';
 import { StepTitle } from '../ui/StepTitle';
 import { useLayout } from '../ui/useLayout';
+import { rowShare } from '../ui/layout';
 
 /** The token rolls in once the panel has settled. */
 const ROLL_DELAY_MS = 180;
@@ -70,7 +71,7 @@ export default function HasToken() {
       </Enter>
 
       <Enter index={3} delay={ROLL_DELAY_MS} style={[styles.actions, compact && styles.actionsStacked]}>
-        <View style={[styles.printNote, compact && styles.printNoteStacked]}>
+        <View style={compact ? undefined : styles.printNote}>
           {printState === 'printed' || printState === 'failed' ? <PrintNote state={printState} /> : null}
         </View>
         {showPrint ? (
@@ -177,8 +178,7 @@ const styles = StyleSheet.create({
   factValueCompact: { fontSize: 22, lineHeight: 28 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   actionsStacked: { flexDirection: 'column-reverse', alignItems: 'stretch' },
-  printNote: { flex: 1 },
-  printNoteStacked: { flex: 0 },
+  printNote: rowShare(),
   printNoteRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   printNoteText: { ...typography.body, fontFamily: fonts.medium, flexShrink: 1 },
 });

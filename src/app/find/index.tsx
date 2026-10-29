@@ -21,6 +21,7 @@ import { padWidth, sideBySide } from '../../ui/sizing';
 import { StepTitle } from '../../ui/StepTitle';
 import { useShake } from '../../ui/Shake';
 import { useLayout } from '../../ui/useLayout';
+import { rowShare } from '../../ui/layout';
 
 /** Find my record, step 1: the mobile number the hospital has on file. */
 export default function FindMobile() {
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     boxShadow: shadows.card,
   },
-  entryBeside: { flex: 1 },
+  entryBeside: rowShare(),
   entryCompact: { padding: spacing.md },
   field: { alignSelf: 'stretch' },
   messageSlot: { minHeight: 56, justifyContent: 'center' },

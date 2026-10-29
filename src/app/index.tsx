@@ -32,6 +32,7 @@ import { BigTile } from '../ui/BigTile';
 import { Ripple } from '../ui/Ripple';
 import { Screen } from '../ui/Screen';
 import { useShake } from '../ui/Shake';
+import { rowShare } from '../ui/layout';
 import { useLayout } from '../ui/useLayout';
 
 /** idle: listening; reading: asking the server who the card belongs to; found: on the way to the next screen. */
@@ -369,8 +370,8 @@ const styles = StyleSheet.create({
   choices: { flexGrow: 1, flexDirection: 'row', gap: spacing.lg },
   choicesStacked: { flexDirection: 'column' },
   // The card is the fastest way in, so it gets the most room.
-  cardColumn: { flex: 11 },
-  otherColumn: { flex: 10, gap: spacing.lg },
+  cardColumn: rowShare(11),
+  otherColumn: { ...rowShare(10), gap: spacing.lg },
   otherStacked: { gap: spacing.md },
   cardShadow: { boxShadow: '0px 10px 22px rgba(14, 80, 214, 0.32)' },
   cardFace: { flex: 1, justifyContent: 'space-between', overflow: 'hidden' },

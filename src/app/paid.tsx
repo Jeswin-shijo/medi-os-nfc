@@ -15,6 +15,7 @@ import { SampleStrip } from '../ui/SampleStrip';
 import { Screen } from '../ui/Screen';
 import { WaitingDots } from '../ui/StatusPanel';
 import { useLayout } from '../ui/useLayout';
+import { rowShare } from '../ui/layout';
 
 /** The success moment is shown this long before the ticket takes over (Continue goes sooner). */
 const SHOW_MS = 3000;
@@ -62,7 +63,7 @@ export default function Paid() {
   return (
     <Screen>
       <View style={[styles.body, sizes.stacked && styles.bodyStacked]}>
-      <View style={[styles.hero, sizes.stacked && styles.heroStacked]}>
+      <View style={[styles.hero, !sizes.stacked && styles.beside]}>
         <CheckBurst size={sizes.check} />
         <Enter delay={DETAILS_DELAY_MS - 150} style={styles.heroText}>
           <Text style={[styles.title, heroType(layout)]} accessibilityRole="header" accessibilityLiveRegion="polite">
@@ -72,7 +73,7 @@ export default function Paid() {
         </Enter>
       </View>
 
-      <View style={[styles.side, sizes.stacked && styles.sideStacked]}>
+      <View style={[styles.side, !sizes.stacked && styles.beside]}>
         <Enter delay={DETAILS_DELAY_MS} style={styles.card}>
           {rows.map((row, i) => (
             <Enter key={row.label} index={i + 1} delay={DETAILS_DELAY_MS} style={[styles.row, { minHeight: sizes.rowHeight }, i > 0 && styles.rowRule]}>
@@ -125,13 +126,12 @@ export default function Paid() {
 const styles = StyleSheet.create({
   body: { flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
   bodyStacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.md },
-  hero: { flex: 1, alignItems: 'center', gap: spacing.md },
-  heroStacked: { flex: 0 },
+  hero: { alignItems: 'center', gap: spacing.md },
+  beside: rowShare(),
   heroText: { alignItems: 'center', gap: 6 },
   title: { ...typography.hero, color: colors.success, textAlign: 'center' },
   subtitle: { ...typography.bodyLarge, color: colors.textSecondary, textAlign: 'center', maxWidth: 480 },
-  side: { flex: 1, gap: spacing.md, justifyContent: 'center' },
-  sideStacked: { flex: 0 },
+  side: { gap: spacing.md, justifyContent: 'center' },
   card: { borderRadius: radii.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, boxShadow: shadows.card, paddingHorizontal: 28, paddingVertical: 8 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16 },
   rowRule: { borderTopWidth: 1, borderTopColor: colors.border },

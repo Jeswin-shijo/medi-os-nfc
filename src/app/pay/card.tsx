@@ -18,6 +18,7 @@ import { SampleStrip } from '../../ui/SampleStrip';
 import { Screen } from '../../ui/Screen';
 import { WaitingDots } from '../../ui/StatusPanel';
 import { useLayout } from '../../ui/useLayout';
+import { rowShare } from '../../ui/layout';
 
 const PURPLE = methodColors.CARD;
 
@@ -46,7 +47,7 @@ function CardScreen({ visitId, fee }: { visitId: string; fee: number }) {
         <CardMachine scale={scale} />
       </Enter>
 
-      <View style={[styles.side, stacked && styles.sideStacked]}>
+      <View style={[styles.side, stacked ? styles.sideStacked : styles.sideBeside]}>
         <Enter index={1} style={[styles.copy, stacked && styles.copyStacked]}>
           <Text style={[styles.title, heroType(layout), stacked && styles.centred]} accessibilityRole="header">
             {strings.cardPay.title(fee)}
@@ -135,8 +136,9 @@ const styles = StyleSheet.create({
   keys: { width: 190, flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' },
   key: { width: 54, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.16)' },
   slot: { position: 'absolute', bottom: 18, width: 150, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.3)' },
-  side: { flex: 1, gap: spacing.lg, justifyContent: 'center' },
-  sideStacked: { flex: 0, gap: spacing.md },
+  side: { gap: spacing.lg, justifyContent: 'center' },
+  sideBeside: rowShare(),
+  sideStacked: { gap: spacing.md },
   copy: { gap: 10 },
   copyStacked: { alignItems: 'center' },
   // Lines that wrap on a phone stay centred under the centred title.

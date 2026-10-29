@@ -24,6 +24,7 @@ import { Screen } from '../../ui/Screen';
 import { padWidth, sideBySide } from '../../ui/sizing';
 import { StepTitle } from '../../ui/StepTitle';
 import { useLayout } from '../../ui/useLayout';
+import { rowShare } from '../../ui/layout';
 
 const CODE_LENGTH = 6;
 /** The boxes stay green this long before the next screen slides in. */
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     boxShadow: shadows.card,
   },
-  panelBeside: { flex: 1 },
+  panelBeside: rowShare(),
   panelCompact: { padding: spacing.md },
   messageSlot: { minHeight: 36, alignItems: 'center', justifyContent: 'center' },
   line: { flexDirection: 'row', alignItems: 'center', gap: 10 },

@@ -23,6 +23,7 @@ import { SampleStrip } from '../ui/SampleStrip';
 import { Screen } from '../ui/Screen';
 import { StepTitle } from '../ui/StepTitle';
 import { useLayout } from '../ui/useLayout';
+import { rowShare } from '../ui/layout';
 
 const METHODS: { method: PaymentMethod; flag: 'upi' | 'cash' | 'card'; icon: IconName; copy: { title: string; subtitle: string } }[] = [
   { method: 'UPI', flag: 'upi', icon: 'qrcode-scan', copy: strings.payment.upi },
@@ -159,7 +160,7 @@ export default function Payment() {
 
       <View style={[styles.tiles, tiles.fillHeight && styles.tilesFill, { gap: tiles.fillHeight ? spacing.md : gap }]}>
         {enabled.map((m, i) => (
-          <Enter key={m.method} index={i + 2} style={tiles.fillHeight ? styles.tileSlot : { flexGrow: 1, flexBasis: slotWidth, maxWidth: slotWidth }}>
+          <Enter key={m.method} index={i + 2} style={tiles.fillHeight ? styles.tileSlot : { width: slotWidth }}>
             <BigTile
               filled
               color={methodColors[m.method]}
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
   errorText: { ...typography.body, color: colors.dangerStrong, flexShrink: 1 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap' },
   tilesFill: { flexGrow: 1, minHeight: 220, flexWrap: 'nowrap' },
-  tileSlot: { flex: 1 },
+  tileSlot: rowShare(),
   tile: { flex: 1 },
   actions: { flexDirection: 'row', justifyContent: 'flex-start' },
   none: {
