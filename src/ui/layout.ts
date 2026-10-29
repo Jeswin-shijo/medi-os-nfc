@@ -62,6 +62,10 @@ export function rowShare(grow = 1) {
   return { flexGrow: grow, flexShrink: 1, width: 0 } as const;
 }
 
+/** Windows narrower than this show only the time in the header: the date squeezed the hospital name to "...". */
+export const HEADER_DATE_MIN_WIDTH = 900;
+export const headerTimeOnly = (l: Layout) => l.width < HEADER_DATE_MIN_WIDTH;
+
 export function sizeClassFor(width: number): SizeClass {
   if (width < MEDIUM_MIN_WIDTH) return 'compact';
   return width < EXPANDED_MIN_WIDTH ? 'medium' : 'expanded';

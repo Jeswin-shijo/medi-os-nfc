@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { layoutFor, rowShare } from './layout';
+import { headerTimeOnly, layoutFor, rowShare } from './layout';
 
 test('phone upright is compact with one doctor per row', () => {
   const l = layoutFor(390, 844);
@@ -83,4 +83,13 @@ test('rowShare grows like flex but with a zero width, which Yoga recomputes afte
   assert.deepEqual(rowShare(), { flexGrow: 1, flexShrink: 1, width: 0 });
   assert.deepEqual(rowShare(11), { flexGrow: 11, flexShrink: 1, width: 0 });
   assert.equal('flexBasis' in rowShare(), false);
+});
+
+test('the header clock drops the date under 900 dp, so the hospital name keeps its room', () => {
+  assert.equal(headerTimeOnly(layoutFor(1280, 800)), false);
+  assert.equal(headerTimeOnly(layoutFor(1024, 640)), false);
+  assert.equal(headerTimeOnly(layoutFor(952, 427)), false);
+  assert.equal(headerTimeOnly(layoutFor(800, 1280)), true);
+  assert.equal(headerTimeOnly(layoutFor(640, 1024)), true);
+  assert.equal(headerTimeOnly(layoutFor(427, 952)), true);
 });

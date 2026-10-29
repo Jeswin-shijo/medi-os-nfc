@@ -17,6 +17,7 @@ import { clinicClock, formatHeaderTime } from '../lib/time';
 import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts, headerGradient, headerSubtle, motion, radii, spacing, typography } from '../theme/tokens';
 import { Stepper } from './Stepper';
+import { headerTimeOnly } from './layout';
 import { useLayout } from './useLayout';
 
 /** Holding the logo this long opens the staff menu. Nothing on screen says so: patients never find it by accident. */
@@ -80,7 +81,7 @@ export function KioskShell({ children }: { children: ReactNode }) {
             </Text>
           )}
         </View>
-        <HeaderClock clinic={config?.clinic ?? null} timeOnly={compact} />
+        <HeaderClock clinic={config?.clinic ?? null} timeOnly={headerTimeOnly(layout)} />
         {inFlow ? (
           <Animated.View entering={appear} exiting={disappear}>
             <PressableScale
