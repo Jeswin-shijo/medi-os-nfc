@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { classifyVisit, createPollTracker, methodSlug, payScreenGuard, serverSkewMs, RECONNECT_AFTER, secondsLeft, tokenWaitState, TOKEN_WAIT_MS } from './visitPolling';
+import { classifyVisit, createPollTracker, methodSlug, orderReady, payScreenGuard, serverSkewMs, RECONNECT_AFTER, secondsLeft, tokenWaitState, TOKEN_WAIT_MS } from './visitPolling';
 
 describe('classifyVisit', () => {
   it('maps the four statuses', () => {
@@ -116,5 +116,22 @@ describe('serverSkewMs', () => {
     // 5 min order, expires 10:06 server time; server now is 10:01 -> 300 s, not 360.
     assert.equal(secondsLeft('2026-09-26T10:06:00.000Z', device + skew, 300), 300);
     assert.equal(secondsLeft('2026-09-26T10:04:00.000Z', device + skew, 300), 180);
+  });
+});
+
+describe('orderReady', () => {
+  const waiting = { status: 'awaiting-payment' as const };
+  it('needs the QR link for UPI and the counter code for cash', () => {
+    assert.equal(orderReady({ ...waiting, upiUri: 'upi://pay' }, 'UPI'), true);
+    assert.equal(orderReady(waiting, 'UPI'), false);
+    assert.equal(orderReady({ ...waiting, paymentCode: '4821' }, 'CASH'), true);
+    assert.equal(orderReady(waiting, 'CASH'), false);
+  });
+  it('needs nothing more for a card: the card machine shows the amount', () => {
+    assert.equal(orderReady(waiting, 'CARD'), true);
+  });
+  it('is never ready once the visit is not waiting for payment', () => {
+    assert.equal(orderReady({ status: 'paid', upiUri: 'upi://pay' }, 'UPI'), false);
+    assert.equal(orderReady({ status: 'expired' }, 'CARD'), false);
   });
 });

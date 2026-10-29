@@ -8,7 +8,7 @@ import type { PaymentMethod, VisitView } from '../api/types';
 import { goPaid } from '../flow/usePayWaiting';
 import { useFlow } from '../flow/useFlow';
 import { useRequestGuard } from '../flow/useRequestGuard';
-import { methodSlug } from '../flow/visitPolling';
+import { methodSlug, orderReady } from '../flow/visitPolling';
 import { strings } from '../i18n/strings';
 import { Enter } from '../motion/Enter';
 import { feedback } from '../motion/feedback';
@@ -63,8 +63,7 @@ export default function Payment() {
     try {
       const ordered = await api.pay(visit.id, method);
       if (stale()) return;
-      const ready = method === 'CASH' ? !!ordered.paymentCode : !!ordered.upiUri;
-      if (ordered.status !== 'awaiting-payment' || !ready) {
+      if (!orderReady(ordered, method)) {
         // The answer is not an order we can show: nothing is charged by this; try again.
         setPending(null);
         feedback.error();

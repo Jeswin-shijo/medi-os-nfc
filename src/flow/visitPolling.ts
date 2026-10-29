@@ -86,6 +86,17 @@ export function serverSkewMs(serverTime: string, deviceNowMs: number): number {
   return Number.isNaN(server) ? 0 : server - deviceNowMs;
 }
 
+/**
+ * Whether a fresh order can be shown: UPI needs its QR link and cash its counter code; a card needs
+ * nothing more (the card machine shows the amount). Anything but a waiting visit is not an order to show.
+ */
+export function orderReady(visit: { status: VisitStatus; upiUri?: string; paymentCode?: string }, method: PaymentMethod): boolean {
+  if (visit.status !== 'awaiting-payment') return false;
+  if (method === 'UPI') return !!visit.upiUri;
+  if (method === 'CASH') return !!visit.paymentCode;
+  return true;
+}
+
 /** What a payment screen does with the visit in the flow. Paid and closed visits stay: the screen itself handles those outcomes. */
 export type PayGuard = 'stay' | 'to-welcome' | 'to-payment';
 
