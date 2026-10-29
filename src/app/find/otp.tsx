@@ -253,9 +253,9 @@ const styles = StyleSheet.create({
   messageSlot: { minHeight: 36, alignItems: 'center', justifyContent: 'center' },
   line: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   lineText: { ...typography.label, flexShrink: 1 },
-  resendRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
-  // Resend and Change number wrap onto two lines on a narrow phone.
-  resendRowCompact: { flexWrap: 'wrap', justifyContent: 'center' },
+  // Resend and Change number wrap onto two lines wherever they do not fit side by side (a phone, a small tablet).
+  resendRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  resendRowCompact: { justifyContent: 'center' },
   waiting: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: sizes.touchMin },
   waitingText: { ...typography.body, color: colors.textSecondary, fontVariant: ['tabular-nums'] },
 });
