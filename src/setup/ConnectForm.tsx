@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { KioskApiError } from '../api/client';
 import { strings } from '../i18n/strings';
 import { normalizeApiUrl, type SetupLink } from '../lib/deeplink';
 import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts, radii, spacing } from '../theme/tokens';
+import { KeyboardRoom } from '../ui/KeyboardRoom';
+import { useKeyboardReveal } from '../ui/useKeyboardReveal';
 import { useLayout } from '../ui/useLayout';
 
 interface ConnectFormProps {
@@ -24,6 +26,8 @@ interface ConnectFormProps {
 export function ConnectForm({ title = strings.setup.title, intro = strings.setup.intro, onConnected, autoLink, linkError, onActivity }: ConnectFormProps) {
   const { connect, notice, address } = useKioskApp();
   const layout = useLayout();
+  const scroll = useRef<ScrollView>(null);
+  const keyboardReveal = useKeyboardReveal(scroll);
   const compact = layout.size === 'compact';
   // Until typed in (or filled from a link), the field shows the address the kiosk already has.
   const [typedServer, setServer] = useState<string | null>(null);
@@ -66,8 +70,10 @@ export function ConnectForm({ title = strings.setup.title, intro = strings.setup
   }
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={[styles.scroll, { padding: compact ? spacing.md : spacing.lg }]} keyboardShouldPersistTaps="handled">
+    // The keyboard covers the window (the kiosk is immersive): the form makes room for it and scrolls the
+    // focused field above it (the kiosk key sat under it on a phone).
+    <KeyboardRoom style={styles.screen}>
+      <ScrollView ref={scroll} {...keyboardReveal} contentContainerStyle={[styles.scroll, { padding: compact ? spacing.md : spacing.lg }]} keyboardShouldPersistTaps="handled">
         <View style={[styles.card, compact && styles.cardCompact]}>
           <Text style={[styles.title, { fontSize: compact ? 26 : 32, lineHeight: compact ? 32 : 40 }]}>{title}</Text>
           <Text style={[styles.intro, { fontSize: layout.type.body }]}>{intro}</Text>
@@ -131,7 +137,7 @@ export function ConnectForm({ title = strings.setup.title, intro = strings.setup
           </Pressable>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardRoom>
   );
 }
 

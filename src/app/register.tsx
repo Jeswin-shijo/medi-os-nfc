@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion, useReducedMotion, ZoomIn } from 'react-native-reanimated';
 import { KioskApiError } from '../api/client';
 import type { RegisterInput } from '../api/types';
@@ -19,6 +19,7 @@ import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts, motion, radii, shadows, spacing, typography } from '../theme/tokens';
 import { Button, type IconName } from '../ui/Button';
 import { ChoicePanel } from '../ui/ChoicePanel';
+import { KeyboardRoom } from '../ui/KeyboardRoom';
 import { Screen } from '../ui/Screen';
 import { contentWidth } from '../ui/sizing';
 import { StepTitle } from '../ui/StepTitle';
@@ -151,8 +152,8 @@ export default function Register() {
   const dobProblem = byDob && day !== '' && month !== '' && year.length === 4 && dob === null;
 
   return (
-    // Phones and small tablets show the keyboard over the form: the Screen scrolls and the form lifts above it.
-    <KeyboardAvoidingView style={styles.avoid} behavior="padding">
+    // Phones and small tablets show the keyboard over the form: the form makes room and the Screen scrolls the field above it.
+    <KeyboardRoom style={styles.avoid}>
       <Screen>
         <StepTitle title={strings.register.title} subtitle={strings.register.subtitle} />
 
@@ -303,7 +304,7 @@ export default function Register() {
           </Animated.View>
         </Enter>
       </Screen>
-    </KeyboardAvoidingView>
+    </KeyboardRoom>
   );
 }
 
