@@ -68,8 +68,11 @@ export function PickFrame({ header, footer, children, grid = false, notice, over
 const styles = StyleSheet.create({
   root: { flex: 1 },
   frame: { flex: 1, width: '100%', alignSelf: 'center', paddingTop: spacing.sm },
-  scroll: { flex: 1, overflow: 'visible' },
-  scrollContent: { paddingBottom: spacing.md },
+  // Clipped at its own edges: with overflow visible the cards scrolled over the heading and the Back button
+  // when the grid was taller than the window (a small tablet on its side). The view reaches 12 dp into the
+  // gutters, and the content pads them back, so card shadows and the selected card's lift are not cut.
+  scroll: { flex: 1, marginHorizontal: -12 },
+  scrollContent: { paddingHorizontal: 12, paddingTop: 6, paddingBottom: spacing.md },
   page: { gap: spacing.md },
   footer: { flexDirection: 'row', justifyContent: 'flex-start', marginTop: 'auto' },
 });
