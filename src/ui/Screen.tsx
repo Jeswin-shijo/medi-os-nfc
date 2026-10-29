@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing } from '../theme/tokens';
+import { useKeyboardReveal } from './useKeyboardReveal';
 import { useLayout } from './useLayout';
 
 /**
@@ -14,9 +15,12 @@ export function Screen({ children, style, resetKey }: { children: ReactNode; sty
   const scroll = useRef<ScrollView>(null);
   useEffect(() => scroll.current?.scrollTo({ y: 0, animated: false }), [resetKey]);
   const insets = useSafeAreaInsets();
+  // A field the patient taps low on a phone comes up above the keyboard.
+  const keyboardReveal = useKeyboardReveal(scroll);
   return (
     <ScrollView
       ref={scroll}
+      {...keyboardReveal}
       style={{ flex: 1 }}
       contentContainerStyle={[
         {
