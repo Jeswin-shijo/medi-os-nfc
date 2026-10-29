@@ -37,20 +37,32 @@ export function welcomeTilesDense(l: Layout): boolean {
   return ((contentWidth(l) - 24) * 10) / 21 < ROW_TILE_DENSE_MAX;
 }
 
-/** The patient card's details column needs this much width for two facts side by side ("26 Sep 2026 11:30 AM" at 26 sp). */
+/** The patient card's details column needs this much width for two facts side by side ("26 Sep 2026 11:30 AM") at 26 sp, and at 20 sp. */
 export const PATIENT_FACTS_TWO_MIN = 600;
+export const PATIENT_FACTS_TWO_SMALL_MIN = 440;
+
+export interface PatientFacts {
+  twoColumns: boolean;
+  /** The value size when two to a row in a narrower column; null keeps the screen's own size. */
+  valueFont: { fontSize: number; lineHeight: number } | null;
+}
 
 /**
- * Whether the patient card shows its facts two to a row. The details column is what is left beside the
- * identity block (40% of the content, at most 400) and the divider, less its padding (16 on a short
- * window, 40 otherwise). A phone upright stacks the card and lists the facts one per row.
+ * How the patient card lists its facts. The details column is what is left beside the identity block (40% of
+ * the content, at most 400) and the divider, less its padding (16 on a short window, 40 otherwise). Wide
+ * columns keep two to a row; a medium column (a small tablet or a phone on its side, where the height is
+ * scarce) keeps two to a row in smaller type so Continue stays in sight; narrow ones list one per row.
+ * A phone upright stacks the card and lists the facts one per row.
  */
-export function patientFactsTwoColumns(l: Layout): boolean {
-  if (l.size === 'compact') return false;
+export function patientFacts(l: Layout): PatientFacts {
+  if (l.size === 'compact') return { twoColumns: false, valueFont: null };
   const available = contentWidth(l);
   const identity = fit(400, Math.round(available * 0.4));
   const padding = l.short ? 16 : 40;
-  return available - identity - 1 - 2 * padding >= PATIENT_FACTS_TWO_MIN;
+  const details = available - identity - 1 - 2 * padding;
+  if (details >= PATIENT_FACTS_TWO_MIN) return { twoColumns: true, valueFont: null };
+  if (details >= PATIENT_FACTS_TWO_SMALL_MIN) return { twoColumns: true, valueFont: { fontSize: 20, lineHeight: 26 } };
+  return { twoColumns: false, valueFont: null };
 }
 
 /** Height of one number key: tighter on a phone on its side. */

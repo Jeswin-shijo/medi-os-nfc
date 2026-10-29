@@ -10,7 +10,7 @@ import { colors, fonts, motion, radii, shadows, spacing, typography } from '../t
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Screen } from '../ui/Screen';
-import { contentWidth, fit, patientFactsTwoColumns } from '../ui/sizing';
+import { contentWidth, fit, patientFacts } from '../ui/sizing';
 import { StepTitle } from '../ui/StepTitle';
 import { useLayout } from '../ui/useLayout';
 
@@ -52,9 +52,9 @@ export default function PatientFound() {
   const available = contentWidth(layout);
   // A phone upright stacks the identity above the facts, and the actions go full width with Continue first.
   const identityWidth = fit(400, Math.round(available * 0.4));
-  // Two facts to a row only where both fit; otherwise one per row, never cut short.
-  const twoColumns = patientFactsTwoColumns(layout);
-  const factSize = compact ? { fontSize: layout.type.subtitle + 2, lineHeight: 26 } : null;
+  // Two facts to a row only where both fit (in smaller type on a medium column); otherwise one per row, never cut short.
+  const { twoColumns, valueFont } = patientFacts(layout);
+  const factSize = valueFont ?? (compact ? { fontSize: layout.type.subtitle + 2, lineHeight: 26 } : null);
 
   return (
     <Screen>

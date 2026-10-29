@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { layoutFor } from './layout';
-import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, patientFactsTwoColumns, phoneMetrics, sideBySide, welcomeStacked, welcomeTilesDense } from './sizing';
+import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, patientFacts, phoneMetrics, sideBySide, welcomeStacked, welcomeTilesDense } from './sizing';
 
 test('fit keeps the tablet size where there is room and shrinks where there is not', () => {
   assert.equal(fit(460, 1200), 460);
@@ -78,15 +78,17 @@ test('Welcome row tiles go dense where their column is narrow, so the title and 
   assert.equal(welcomeTilesDense(layoutFor(427, 952)), false);
 });
 
-test('patient facts sit two to a row only where "48 years · Female" and "26 Sep 2026 11:30 AM" fit', () => {
-  assert.equal(patientFactsTwoColumns(layoutFor(1280, 800)), true);
-  assert.equal(patientFactsTwoColumns(layoutFor(1920, 1200)), true);
-  // Tablet upright, small tablet on its side and a phone on its side cut them short in two columns.
-  assert.equal(patientFactsTwoColumns(layoutFor(800, 1280)), false);
-  assert.equal(patientFactsTwoColumns(layoutFor(1024, 640)), false);
-  assert.equal(patientFactsTwoColumns(layoutFor(952, 427)), false);
+test('patient facts sit two to a row where they fit, in smaller type on medium columns, else one per row', () => {
+  assert.deepEqual(patientFacts(layoutFor(1280, 800)), { twoColumns: true, valueFont: null });
+  assert.deepEqual(patientFacts(layoutFor(1920, 1200)), { twoColumns: true, valueFont: null });
+  // Small tablet and phone on their side: the height is scarce, so two to a row in 20 sp.
+  assert.deepEqual(patientFacts(layoutFor(1024, 640)), { twoColumns: true, valueFont: { fontSize: 20, lineHeight: 26 } });
+  assert.deepEqual(patientFacts(layoutFor(952, 427)), { twoColumns: true, valueFont: { fontSize: 20, lineHeight: 26 } });
+  // Tablets upright have the height: one per row at full size.
+  assert.deepEqual(patientFacts(layoutFor(800, 1280)), { twoColumns: false, valueFont: null });
+  assert.deepEqual(patientFacts(layoutFor(640, 1024)), { twoColumns: false, valueFont: null });
   // A phone upright stacks the card; its facts are one per row already.
-  assert.equal(patientFactsTwoColumns(layoutFor(427, 952)), false);
+  assert.equal(patientFacts(layoutFor(427, 952)).twoColumns, false);
 });
 
 test('Welcome stacks its tiles on phones upright and small tablets upright', () => {
