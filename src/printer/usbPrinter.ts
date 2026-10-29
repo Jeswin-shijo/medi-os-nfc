@@ -44,3 +44,25 @@ export function resolveUsbPrinter(devices: UsbPrinter[], chosen: UsbPrinterIdent
     reason: matches.length === 0 ? 'The chosen USB printer is not connected.' : 'Two printers look like the chosen one. Choose one in the staff menu.',
   };
 }
+
+/** The saved printer among the printer-class devices connected now, for the staff printer screen. */
+export type SavedPrinterStatus =
+  | 'none' // nothing saved
+  | 'connected' // the saved printer is connected (its serial may not be readable yet)
+  | 'different-serial' // a printer of the saved model is connected, but its serial is another one
+  | 'not-connected';
+
+const sameModel = (device: UsbPrinter, saved: UsbPrinterIdentity): boolean => device.vendorId === saved.vendorId && device.productId === saved.productId;
+
+/** True when `device` is the saved printer: same model, and the same serial where both are known. */
+export function isSavedPrinter(device: UsbPrinter, saved: UsbPrinterIdentity | null | undefined): boolean {
+  if (!saved || !device.printerClass || !sameModel(device, saved)) return false;
+  return !saved.serial || !device.serial || device.serial === saved.serial;
+}
+
+export function savedPrinterStatus(devices: UsbPrinter[], saved: UsbPrinterIdentity | null | undefined): SavedPrinterStatus {
+  if (!saved) return 'none';
+  const printers = devices.filter((d) => d.printerClass);
+  if (printers.some((d) => isSavedPrinter(d, saved))) return 'connected';
+  return printers.some((d) => sameModel(d, saved)) ? 'different-serial' : 'not-connected';
+}

@@ -240,7 +240,7 @@ function DoctorCard({ doctor, selected, locked, onSelect }: DoctorCardProps) {
             <View style={styles.room}>
               <MaterialCommunityIcons name="door-open" size={22} color={colors.textTertiary} />
               <Text style={styles.roomText} numberOfLines={1}>
-                {strings.doctor.room(doctor.room)}
+                {doctor.room}
               </Text>
             </View>
           </View>

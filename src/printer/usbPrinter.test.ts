@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { UsbPrinter } from '../../modules/medios-printer/src/MediosPrinter.types';
-import { resolveUsbPrinter, usbIdentity, usbPrinterSettings } from './usbPrinter';
+import { isSavedPrinter, resolveUsbPrinter, savedPrinterStatus, usbIdentity, usbPrinterSettings } from './usbPrinter';
 
 const EPSON = { vendorId: 0x04b8, productId: 0x0202 };
 const TVS = { vendorId: 0x0fe6, productId: 0x811e };
@@ -93,5 +93,34 @@ describe('resolveUsbPrinter', () => {
     for (const result of [resolveUsbPrinter([], saved), resolveUsbPrinter([], null)]) {
       assert.ok(!result.ok && result.reason.length > 0);
     }
+  });
+});
+
+describe('savedPrinterStatus and isSavedPrinter (staff printer screen)', () => {
+  const saved = { ...EPSON, serial: 'AAA' };
+
+  it('says none when nothing is saved', () => {
+    assert.equal(savedPrinterStatus([device({ deviceId: 1 })], null), 'none');
+  });
+
+  it('finds the saved printer by its serial, not its device id', () => {
+    const list = [device({ deviceId: 7, serial: 'BBB' }), device({ deviceId: 8, serial: 'AAA' })];
+    assert.equal(savedPrinterStatus(list, saved), 'connected');
+    assert.equal(isSavedPrinter(list[0], saved), false);
+    assert.equal(isSavedPrinter(list[1], saved), true);
+  });
+
+  it('takes a same-model printer whose serial is not readable yet as the saved one', () => {
+    assert.equal(savedPrinterStatus([device({ deviceId: 7, serial: null })], saved), 'connected');
+  });
+
+  it('reports a different serial of the same model', () => {
+    assert.equal(savedPrinterStatus([device({ deviceId: 7, serial: 'BBB' })], saved), 'different-serial');
+  });
+
+  it('reports not connected for another model or a non-printer device', () => {
+    assert.equal(savedPrinterStatus([device({ deviceId: 7, ...TVS })], saved), 'not-connected');
+    assert.equal(savedPrinterStatus([device({ deviceId: 7, serial: 'AAA', printerClass: false })], saved), 'not-connected');
+    assert.equal(savedPrinterStatus([], saved), 'not-connected');
   });
 });

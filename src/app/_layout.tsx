@@ -23,7 +23,9 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const router = useRouter();
-  const onSetup = (useSegments() as string[])[0] === 'setup';
+  const firstSegment = (useSegments() as string[])[0];
+  // Setup and the staff menu work even while the server cannot be reached.
+  const onSetup = firstSegment === 'setup' || firstSegment === 'staff';
   const [fontsLoaded, fontError] = useFonts({ IBMPlexSans_400Regular, IBMPlexSans_500Medium, IBMPlexSans_600SemiBold, IBMPlexSans_700Bold });
   const { status, loadError, reload } = useKioskApp();
   const resetting = useFlow((s) => s.resetting);
@@ -71,8 +73,14 @@ export default function RootLayout() {
               <Stack.Screen name="pay/card" />
               <Stack.Screen name="paid" />
               <Stack.Screen name="ticket" />
+              {/* Staff sign-in, card linking and the printer need the server address of a configured kiosk. */}
+              <Stack.Screen name="staff/index" />
+              <Stack.Screen name="staff/link-card" />
+              <Stack.Screen name="staff/printer" />
             </Stack.Protected>
+            {/* Always reachable: first-run setup, and the staff "Kiosk setup" (it signs in first, so it also serves a kiosk whose key was removed). */}
             <Stack.Screen name="setup" />
+            <Stack.Screen name="staff/setup" />
           </Stack>
         </KioskShell>
       </InactivityGuard>
