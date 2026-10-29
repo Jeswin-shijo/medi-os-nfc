@@ -48,11 +48,13 @@ function CardScreen({ visitId, fee }: { visitId: string; fee: number }) {
 
       <View style={[styles.side, stacked && styles.sideStacked]}>
         <Enter index={1} style={[styles.copy, stacked && styles.copyStacked]}>
-          <Text style={[styles.title, heroType(layout)]} accessibilityRole="header">
+          <Text style={[styles.title, heroType(layout), stacked && styles.centred]} accessibilityRole="header">
             {strings.cardPay.title(fee)}
           </Text>
-          <Text style={[styles.instruction, { fontSize: layout.size === 'expanded' ? 26 : layout.type.subtitle + 2 }]}>{strings.cardPay.instruction}</Text>
-          <Text style={[styles.hint, copy]}>{strings.cardPay.hint}</Text>
+          <Text style={[styles.instruction, { fontSize: layout.size === 'expanded' ? 26 : layout.type.subtitle + 2 }, stacked && styles.centred]}>
+            {strings.cardPay.instruction}
+          </Text>
+          <Text style={[styles.hint, copy, stacked && styles.centred]}>{strings.cardPay.hint}</Text>
         </Enter>
 
         <Enter index={2} style={styles.status}>
@@ -137,6 +139,8 @@ const styles = StyleSheet.create({
   sideStacked: { flex: 0, gap: spacing.md },
   copy: { gap: 10 },
   copyStacked: { alignItems: 'center' },
+  // Lines that wrap on a phone stay centred under the centred title.
+  centred: { textAlign: 'center' },
   title: { ...typography.hero, color: colors.textPrimary },
   instruction: { ...typography.headline, color: PURPLE },
   hint: { ...typography.bodyLarge, color: colors.textSecondary },
