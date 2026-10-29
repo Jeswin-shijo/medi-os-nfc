@@ -63,6 +63,8 @@ export default function RootLayout() {
               <Stack.Screen name="find/otp" />
               <Stack.Screen name="find/choose" />
               <Stack.Screen name="register" />
+              <Stack.Screen name="department" />
+              <Stack.Screen name="doctor" />
             </Stack.Protected>
             <Stack.Screen name="setup" />
           </Stack>

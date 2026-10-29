@@ -148,6 +148,36 @@ export const strings = {
       anyway: 'Register anyway',
     },
   },
+  department: {
+    title: 'Which department do you need?',
+    subtitle: 'Tap the one that fits. Not sure? Ask at the reception counter.',
+    doctors: (n: number) => (n === 0 ? 'No doctors today' : n === 1 ? '1 doctor' : `${n} doctors`),
+    empty: 'No departments are open right now. Please ask at the reception counter.',
+    loadFailed: 'We could not load the departments.',
+    back: 'Back',
+  },
+  doctor: {
+    title: 'Choose your doctor',
+    subtitle: (department: string) => `${department}. Tap Select next to the doctor you would like to see.`,
+    fee: (rupees: number) => `\u20B9${rupees}`,
+    room: (room: string) => `Room ${room}`,
+    select: 'Select',
+    selecting: 'Selecting...',
+    empty: 'No doctors are available in this department today. Please choose another department or ask at the counter.',
+    loadFailed: 'We could not load the doctors.',
+    changeDepartment: 'Change department',
+    noLongerAvailable: 'That doctor is no longer available. Please choose another.',
+    cardLabel: (name: string, qualifications: string, fee: number, room: string, availability: string, bookable: boolean) =>
+      `${name}, ${qualifications}, fee \u20B9${fee}, room ${room}, ${availability}${bookable ? '' : ', cannot be selected'}`,
+    cashPending: {
+      title: 'You already have a payment waiting',
+      done: 'Done',
+    },
+    sessionEnded: {
+      title: 'Your session has ended',
+      startOver: 'Start over',
+    },
+  },
   shell: {
     fallbackName: 'MediOS Reception',
     subtitle: 'OP Registration Kiosk',
