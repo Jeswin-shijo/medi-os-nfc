@@ -362,7 +362,9 @@ const styles = StyleSheet.create({
   body: { flexGrow: 1, flexDirection: 'row' },
   bodyStacked: { flexDirection: 'column', gap: spacing.md },
 
-  slipArea: { flex: 1, minWidth: 0 },
+  // Shrinkable, not just flex: 1 (which cannot shrink). When the phone turns from upright to sideways the column's
+  // height can be kept as the slip's starting width; shrinking brings it back to the room beside the side column.
+  slipArea: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
   slipAreaStacked: { alignSelf: 'stretch' },
   slipWindow: {
     marginTop: SLOT_HEIGHT / 2,
