@@ -141,8 +141,9 @@ export default function Register() {
   }
 
   const compact = layout.size === 'compact';
-  // Two cards side by side where there is room; one under the other on a phone upright or a small tablet.
-  const twoColumns = contentWidth(layout) >= 720;
+  // Two cards side by side where there is room; one under the other on a phone upright and tablets upright
+  // (at 736 dp of content the mobile number's placeholder was cut off in a half-width card).
+  const twoColumns = contentWidth(layout) >= 800;
   const tight = compact || layout.short;
   // Taller fields and toggles where there is room; 60 and 72 dp keep the touch target on a phone.
   const inputSize = tight ? { height: 60, fontSize: 22, paddingHorizontal: 16 } : null;
