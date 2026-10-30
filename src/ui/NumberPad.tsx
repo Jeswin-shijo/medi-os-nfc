@@ -51,6 +51,8 @@ export function NumberPad({ onDigit, onBackspace, onClear, disabled = false, key
                 onPress={() => press(key)}
                 disabled={disabled}
                 accessibilityLabel={label}
+                // For the end-to-end flows: the same digit is also on screen in the number field.
+                testID={key.kind === 'digit' ? `numpad-${key.digit}` : `numpad-${key.kind}`}
                 highlight="rgba(30, 107, 255, 0.12)"
                 style={[styles.slot, styles.key, key.kind !== 'digit' && styles.keyAction, { height }, disabled && styles.keyDisabled]}
               >
