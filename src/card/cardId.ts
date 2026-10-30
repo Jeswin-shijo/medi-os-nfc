@@ -1,7 +1,12 @@
 // No react-native imports: tested in plain Node.
 
-/** A burst ends when nothing arrives for this long (readers that send no Enter). */
-const SILENCE_MS = 120;
+/**
+ * A burst ends when nothing arrives for this long (readers that send no Enter). Long enough to ride out a
+ * busy moment of the app: at 120 ms, the first card after the setup link (the app still settling) was split
+ * at a stall into '04A1' and 'B2C3'. A reader without Enter has its id a little later; one with Enter is
+ * never ended by silence once its first Enter is seen.
+ */
+export const SILENCE_MS = 600;
 /** Keys left this long without their Enter are dropped, so they never join the next card's id. */
 const LEFT_OVER_MS = 1000;
 /** Card readers type a whole id in a few ms; a burst with a longer gap between keys is never ended by silence alone. */
@@ -39,7 +44,7 @@ export interface ReaderHabits {
  * - at Enter or a newline: any 4 or more hex digits, however far apart the keys reached the app
  *   (a busy JS thread delivers a real reader's keys 100–200 ms apart);
  * - for readers that send no Enter, on the first push (an empty one is a plain time check) after
- *   120 ms of silence, when it is a reader id and no key came more than 80 ms after the one before.
+ *   600 ms of silence, when it is a reader id and no key came more than 80 ms after the one before.
  *   Anything else may be a reader's keys running late (the first of them, or a slow one): it waits
  *   for more keys and its Enter.
  * Once the reader has ended an id with Enter, silence ends nothing: a stall in the middle of an id

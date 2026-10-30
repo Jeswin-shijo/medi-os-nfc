@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Keyboard, StyleSheet, TextInput, type HostInstance } from 'react-native';
-import { UsbReaderBuffer, type ReaderHabits } from './cardId';
+import { SILENCE_MS, UsbReaderBuffer, type ReaderHabits } from './cardId';
 
-/** Checked just after the buffer's 120 ms of silence, for readers that send no Enter. */
-const SILENCE_CHECK_MS = 140;
+/** Checked just after the buffer's silence, for readers that send no Enter. */
+const SILENCE_CHECK_MS = SILENCE_MS + 20;
 /** Long enough for a real text field that took the focus to be the focused one. */
 const REFOCUS_DELAY_MS = 80;
 /** How often a reader field checks whether the focus has come free without anything announcing it. */
