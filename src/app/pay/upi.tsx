@@ -41,14 +41,14 @@ function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUr
   if (closed) return <ClosedPanel status={closed.status} />;
 
   // The ring is sized from the window (see upiSizes); the QR's corners stay inside it.
-  const { stacked, ring, stroke, qr } = upiSizes(layout);
+  const { stacked, ring, stroke, qr, alignTop } = upiSizes(layout);
   const hero = heroType(layout);
   const copy = copyType(layout);
   const over = left === 0;
 
   return (
     <Screen>
-      <View style={[styles.body, stacked && styles.bodyStacked]}>
+      <View style={[styles.body, stacked && styles.bodyStacked, alignTop && styles.bodyTop]}>
       <Enter style={styles.ringSlot}>
         <RingCountdown seconds={seconds} total={MAX_WAIT_SECONDS.UPI} size={ring} strokeWidth={stroke} color={methodColors.UPI} trackColor="#D7F2E5">
           {upiUri ? <QrView value={upiUri} size={qr} accessibilityLabel={strings.upi.qrLabel(fee)} /> : null}
@@ -111,6 +111,7 @@ function UpiScreen({ visitId, upiUri, expiresAt, fee }: { visitId: string; upiUr
 const styles = StyleSheet.create({
   body: { flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xl },
   bodyStacked: { flexDirection: 'column', alignItems: 'stretch', gap: spacing.lg },
+  bodyTop: { alignItems: 'flex-start' },
   ringSlot: { alignItems: 'center', justifyContent: 'center' },
   side: { gap: spacing.lg, justifyContent: 'center' },
   sideBeside: rowShare(),

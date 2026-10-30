@@ -15,7 +15,7 @@ test('the 1280 × 800 tablet keeps its payment sizes', () => {
   assert.equal(chromeHeight(l), 250);
   assert.equal(gridWidth(l), 1200);
   const upi = upiSizes(l);
-  assert.deepEqual(upi, { stacked: false, ring: 550, stroke: 12, qr: 366 });
+  assert.deepEqual(upi, { stacked: false, ring: 550, stroke: 12, qr: 366, alignTop: false });
   assert.equal(methodTiles(l, 3).perRow, 3);
   assert.equal(methodTiles(l, 3).fillHeight, true);
   assert.deepEqual(machineScale(l), { stacked: false, scale: 1 });
@@ -62,6 +62,28 @@ test('a phone on its side puts the QR beside the steps', () => {
   const s = upiSizes(layoutFor(844, 390));
   assert.equal(s.stacked, false);
   assert.equal(s.qr, 220);
+});
+
+test('a phone on its side shows the whole QR without scrolling: the ring sits at the top', () => {
+  // Pixel 10 Pro and Pixel 8 sideways. (Lower windows, 390 dp and under, cannot show a 220 QR and its ring under the header at all.)
+  for (const [w, h] of [[952, 427], [915, 412]] as const) {
+    const l = layoutFor(w, h);
+    const s = upiSizes(l);
+    assert.equal(s.alignTop, true, `${w}x${h}`);
+    assert.ok(s.qr >= 220, `${w}x${h} qr ${s.qr}`);
+    // The ring is taller than the room under the header and tracker; the QR in its middle is not.
+    const room = l.height - l.headerHeight - l.stepperHeight;
+    const screenPaddingTop = 4;
+    assert.ok(s.ring > room, `${w}x${h} ring ${s.ring} fits anyway`);
+    assert.ok(screenPaddingTop + (s.ring + s.qr) / 2 <= room, `${w}x${h} QR bottom ${screenPaddingTop + (s.ring + s.qr) / 2} > ${room}`);
+  }
+  assert.equal(upiSizes(layoutFor(844, 390)).alignTop, true, 'any phone on its side');
+});
+
+test('the ring stays centred beside the steps where the window is tall enough, and above them when stacked', () => {
+  for (const [w, h] of [[1280, 800], [1024, 640], [1920, 1200], [960, 600], [390, 844], [800, 1280]] as const) {
+    assert.equal(upiSizes(layoutFor(w, h)).alignTop, false, `${w}x${h}`);
+  }
 });
 
 test('a portrait tablet gets the biggest QR', () => {

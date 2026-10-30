@@ -67,6 +67,12 @@ export interface UpiSizes {
   stroke: number;
   /** QR edge; its corners stay inside the ring. */
   qr: number;
+  /**
+   * The ring sits at the top beside the steps instead of centred on them: on a phone on its side it is
+   * taller than the room under the header, and centred on the taller steps column its QR started half
+   * below the fold. At the top the whole QR shows; only the ring's lower edge needs a scroll.
+   */
+  alignTop: boolean;
 }
 
 /** Smallest QR edge (dp) that still scans comfortably; only a very narrow window goes below it, never under 200. */
@@ -84,7 +90,7 @@ export function upiSizes(l: Layout): UpiSizes {
   if (l.size === 'expanded') {
     const stroke = 12;
     const ring = Math.round(clamp(l.height - chromeHeight(l), 380, 620));
-    return { stacked, ring, stroke, qr: Math.floor((ring - 2 * stroke - 8) / Math.SQRT2) };
+    return { stacked, ring, stroke, qr: Math.floor((ring - 2 * stroke - 8) / Math.SQRT2), alignTop: false };
   }
   const stroke = l.size === 'compact' ? 8 : 12;
   // The ring may reach into the gutters when stacked (up to the window minus 8 dp each side), so any window of
@@ -94,7 +100,7 @@ export function upiSizes(l: Layout): UpiSizes {
   const widthCap = Math.floor((share - 2 * stroke - slack) / Math.SQRT2);
   const wanted = clamp(Math.round(Math.min(l.width, l.height) / 2), QR_MIN, QR_MAX);
   const qr = Math.max(QR_HARD_MIN, Math.min(wanted, widthCap));
-  return { stacked, ring: Math.ceil(qr * Math.SQRT2) + 2 * stroke + slack, stroke, qr };
+  return { stacked, ring: Math.ceil(qr * Math.SQRT2) + 2 * stroke + slack, stroke, qr, alignTop: !stacked && l.short };
 }
 
 export interface CashSizes {
