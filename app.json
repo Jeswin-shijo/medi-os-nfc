@@ -39,6 +39,7 @@
         }
       ],
       "./modules/medios-printer/app.plugin.js",
+      "./plugins/withKeyboardHiddenOnFocus.js",
       [
         "expo-build-properties",
         {
