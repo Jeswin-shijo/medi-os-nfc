@@ -1,11 +1,13 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { strings } from '../i18n/strings';
 import { Enter } from '../motion/Enter';
 import { PressableScale } from '../motion/Pressable';
 import { colors, fonts, radii, spacing, typography } from '../theme/tokens';
+import { KeyboardRoom } from '../ui/KeyboardRoom';
+import { useKeyboardReveal } from '../ui/useKeyboardReveal';
 import { useLayout } from '../ui/useLayout';
 import { staffSizes } from './staffSizing';
 import { useStaffGuard } from './useStaffGuard';
@@ -33,6 +35,9 @@ export function StaffFrame({ title, children, requireSession = true, onBack, scr
   const layout = useLayout();
   const sizes = staffSizes(layout);
   const insets = useSafeAreaInsets();
+  // The keyboard covers the window (the kiosk is immersive): the body makes room and scrolls the focused field above it.
+  const scrollRef = useRef<ScrollView>(null);
+  const keyboardReveal = useKeyboardReveal(scrollRef);
   const sideLeft = layout.gutter + insets.left;
   const sideRight = layout.gutter + insets.right;
   const who = user ? (
@@ -59,15 +64,19 @@ export function StaffFrame({ title, children, requireSession = true, onBack, scr
         {sizes.stackBar ? who : null}
       </View>
       {scroll ? (
-        <ScrollView
-          contentContainerStyle={[
-            styles.body,
-            { paddingLeft: sideLeft, paddingRight: sideRight, paddingTop: sizes.bodyPadY, paddingBottom: sizes.bodyPadY + insets.bottom },
-          ]}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Enter style={[styles.inner, { maxWidth: sizes.innerMax }]}>{children}</Enter>
-        </ScrollView>
+        <KeyboardRoom style={styles.room}>
+          <ScrollView
+            ref={scrollRef}
+            {...keyboardReveal}
+            contentContainerStyle={[
+              styles.body,
+              { paddingLeft: sideLeft, paddingRight: sideRight, paddingTop: sizes.bodyPadY, paddingBottom: sizes.bodyPadY + insets.bottom },
+            ]}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Enter style={[styles.inner, { maxWidth: sizes.innerMax }]}>{children}</Enter>
+          </ScrollView>
+        </KeyboardRoom>
       ) : (
         children
       )}
@@ -99,6 +108,7 @@ const styles = StyleSheet.create({
   titleCompact: { fontSize: 22, lineHeight: 28 },
   clock: { ...typography.caption, color: colors.textTertiary, fontVariant: ['tabular-nums'] },
   clockLow: { color: colors.dangerStrong, fontFamily: fonts.semibold },
+  room: { flex: 1 },
   body: { flexGrow: 1, alignItems: 'center' },
   inner: { width: '100%', gap: spacing.md },
   card: { backgroundColor: colors.card, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.border, gap: spacing.sm },
