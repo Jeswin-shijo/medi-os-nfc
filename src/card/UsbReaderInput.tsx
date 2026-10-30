@@ -1,11 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AppState, Keyboard, StyleSheet, TextInput } from 'react-native';
-import { UsbReaderBuffer } from './cardId';
+import { UsbReaderBuffer, type ReaderHabits } from './cardId';
 
 /** Checked just after the buffer's 120 ms of silence, for readers that send no Enter. */
 const SILENCE_CHECK_MS = 140;
 /** Long enough for a real text field that took the focus to be the focused one. */
 const REFOCUS_DELAY_MS = 80;
+
+/** One for the app: once the reader has ended an id with Enter, every screen's field waits for the Enter. */
+const readerHabits: ReaderHabits = { sendsEnter: false };
 
 const refocusListeners = new Set<() => void>();
 
@@ -29,7 +32,7 @@ interface UsbReaderInputProps {
  */
 export function UsbReaderInput({ onCard }: UsbReaderInputProps) {
   const ref = useRef<TextInput>(null);
-  const [buffer] = useState(() => new UsbReaderBuffer());
+  const [buffer] = useState(() => new UsbReaderBuffer(readerHabits));
   /** What the field holds, to tell the new keys from the old ones. */
   const held = useRef('');
   const silenceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);

@@ -33,6 +33,23 @@ function typeOut(buffer: UsbReaderBuffer, text: string, start: number, gapMs: nu
   return [...text].map((ch, i) => buffer.push(ch, start + i * gapMs));
 }
 
+/**
+ * Like the reader field on a busy JS thread: each key reaches the app `gapMs` after the one before, and the
+ * field's silence check (140 ms after a key) runs in between whenever the gap is longer. Returns every id completed.
+ */
+function typeSlowly(buffer: UsbReaderBuffer, text: string, start: number, gapMs: number): string[] {
+  const ids: string[] = [];
+  const keep = (id: string | null) => {
+    if (id !== null) ids.push(id);
+  };
+  [...text].forEach((ch, i) => {
+    const at = start + i * gapMs;
+    keep(buffer.push(ch, at));
+    if (gapMs > 140 && i < text.length - 1) keep(buffer.push('', at + 140));
+  });
+  return ids;
+}
+
 describe('UsbReaderBuffer', () => {
   it('completes a fast burst ending with Enter', () => {
     const buffer = new UsbReaderBuffer();
@@ -51,19 +68,92 @@ describe('UsbReaderBuffer', () => {
     assert.equal(buffer.push('0004567890\n', 3000), '0004567890');
   });
 
-  it('ignores slow typing by hand', () => {
+  it('never takes slow typing without Enter', () => {
     const buffer = new UsbReaderBuffer();
-    // About 5 keys a second: every key comes long after the one before it.
-    assert.deepEqual(typeOut(buffer, '04A1B2C3\n', 1000, 200), Array(9).fill(null));
+    // About 5 keys a second, then nothing: a person at a keyboard.
+    assert.deepEqual(typeSlowly(buffer, '04A1B2C3', 1000, 200), []);
+    assert.equal(buffer.push('', 1000 + 7 * 200 + 140), null);
+    assert.equal(buffer.push('', 1000 + 7 * 200 + 900), null);
   });
 
-  it('ignores a burst with a hand-typed pause in it (more than 80 ms between keys)', () => {
+  it('ignores a silence-ended burst with a hand-typed pause in it (more than 80 ms between keys)', () => {
     const buffer = new UsbReaderBuffer();
     typeOut(buffer, '04A1', 1000, 8);
     assert.equal(buffer.push('B', 1024 + 100), null);
-    assert.deepEqual(typeOut(buffer, '2C3\n', 1124 + 8, 8), [null, null, null, null]);
+    typeOut(buffer, '2C3', 1124 + 8, 8);
+    assert.equal(buffer.push('', 1148 + 121), null, 'no Enter: the 80 ms rule applies');
     // The next real read still works.
     assert.equal(buffer.push('04A1B2C3\n', 5000), '04A1B2C3');
+  });
+
+  it('accepts an id ending in Enter whatever the gaps between its keys (the app was busy), from the first card', () => {
+    // 100 ms apart: over the 80 ms hand-typing rule, under the silence.
+    const results = typeOut(new UsbReaderBuffer(), '04A1B2C3\n', 1000, 100);
+    assert.deepEqual(results.slice(0, -1), Array(8).fill(null));
+    assert.equal(results.at(-1), '04A1B2C3');
+    // 150 and 220 ms apart, with the silence check running between the keys.
+    assert.deepEqual(typeSlowly(new UsbReaderBuffer(), '04A1B2C3\n', 1000, 150), ['04A1B2C3']);
+    assert.deepEqual(typeSlowly(new UsbReaderBuffer(), '0004567890\n', 1000, 220), ['0004567890']);
+  });
+
+  it('accepts a slow id whose Enter comes late', () => {
+    const buffer = new UsbReaderBuffer();
+    typeOut(buffer, '04A1B2C3', 1000, 100);
+    // Last key at 1700; the silence check finds a slow burst and waits.
+    assert.equal(buffer.push('', 1700 + 140), null);
+    assert.equal(buffer.push('\n', 1700 + 400), '04A1B2C3');
+  });
+
+  it('drops a slow burst that ends in silence (no Enter)', () => {
+    const buffer = new UsbReaderBuffer();
+    typeOut(buffer, '04A1B2C3', 1000, 100);
+    // Last key at 1700.
+    assert.equal(buffer.push('', 1700 + 121), null);
+    assert.equal(buffer.push('', 1700 + 400), null);
+  });
+
+  it('never joins keys left over for more than a second to the next card', () => {
+    const buffer = new UsbReaderBuffer();
+    typeSlowly(buffer, '12', 1000, 200);
+    assert.equal(buffer.push('04A1B2C3\n', 3000), '04A1B2C3');
+    // Also once the reader is known to send Enter.
+    typeOut(buffer, '0004', 4000, 8);
+    assert.equal(buffer.push('567890\n', 6000), '567890');
+  });
+
+  it('once the reader has ended an id with Enter, a pause no longer ends a burst (a stall cannot split an id)', () => {
+    const buffer = new UsbReaderBuffer();
+    assert.equal(buffer.push('04A1B2C3\n', 1000), '04A1B2C3');
+    typeOut(buffer, '0004', 3000, 8);
+    // The JS thread stalls for 300 ms: the silence check finds nothing to complete.
+    assert.equal(buffer.push('', 3024 + 300), null);
+    assert.equal(buffer.push('567890\n', 3024 + 320), '0004567890');
+  });
+
+  it('once the reader has ended an id with Enter, keys of any pace are one burst up to the Enter', () => {
+    const buffer = new UsbReaderBuffer();
+    buffer.push('0004567890\n', 1000);
+    assert.deepEqual(typeSlowly(buffer, '04A1B2C3\n', 3000, 250), ['04A1B2C3']);
+  });
+
+  it('learns that the reader sends Enter only from a real id', () => {
+    const buffer = new UsbReaderBuffer();
+    assert.equal(buffer.push('HELLO\n', 1000), null);
+    buffer.push('04A1B2C3', 2000);
+    assert.equal(buffer.push('', 2121), '04A1B2C3', 'silence still ends a burst');
+  });
+
+  it('remembers across buffers that share what was learnt (each screen has its own buffer)', () => {
+    const habits = { sendsEnter: false };
+    assert.equal(new UsbReaderBuffer(habits).push('04A1B2C3\n', 1000), '04A1B2C3');
+    const next = new UsbReaderBuffer(habits);
+    typeOut(next, '0004', 3000, 8);
+    assert.equal(next.push('', 3024 + 300), null);
+    assert.equal(next.push('567890\n', 3024 + 320), '0004567890');
+    // A buffer of its own learns nothing from the others.
+    const other = new UsbReaderBuffer();
+    other.push('0004', 5000);
+    assert.equal(other.push('', 5121), '0004');
   });
 
   it('completes a reader that sends no Enter after 120 ms of silence', () => {
@@ -99,8 +189,9 @@ describe('UsbReaderBuffer', () => {
     assert.equal(buffer.push('04:A1:B2:C3\n', 2000), null);
     assert.equal(buffer.push('0004567890\n', 3000), '0004567890');
     assert.equal(buffer.push('abcdef12\n', 4000), 'ABCDEF12');
-    buffer.push('ZZZZ9999', 5000);
-    assert.equal(buffer.push('', 5200), null, 'not by silence either');
+    const quiet = new UsbReaderBuffer();
+    quiet.push('ZZZZ9999', 5000);
+    assert.equal(quiet.push('', 5200), null, 'not by silence either');
   });
 });
 
