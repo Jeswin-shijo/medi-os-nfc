@@ -109,9 +109,18 @@ test('a long fact two to a row shrinks rather than being cut off, and takes a ro
   assert.deepEqual(factFit(layoutFor(952, 427), 'Obstetrics & Gynaecology, Ward 3 follow-up', 48), { fullRow: true, fontSize: null });
   // A long department on a small tablet on its side shrinks too.
   assert.ok((factFit(layoutFor(1024, 640), 'Obstetrics & Gynaecology').fontSize ?? 20) < 20);
-  // One to a row already (tablets upright, phones upright): nothing to fit.
+  // One to a row where the row has room (big tablet upright, phone upright): nothing to change.
   assert.deepEqual(factFit(layoutFor(800, 1280), lastVisit), { fullRow: true, fontSize: null });
   assert.deepEqual(factFit(layoutFor(427, 952), lastVisit), { fullRow: true, fontSize: null });
+});
+
+test('a fact one to a row shrinks too when the row is narrower than the value (a small tablet upright)', () => {
+  // 640 x 1024: one per row at 26 sp in a 250 dp row showed "26 Sep 2026 11:3...".
+  const fitted = factFit(layoutFor(640, 1024), '26 Sep 2026 11:30 AM');
+  assert.equal(fitted.fullRow, true);
+  assert.ok(fitted.fontSize !== null && fitted.fontSize >= 16 && fitted.fontSize < 26, String(fitted.fontSize));
+  // Short values keep the screen's size.
+  assert.deepEqual(factFit(layoutFor(640, 1024), '••••• 56789'), { fullRow: true, fontSize: null });
 });
 
 test('Welcome stacks its tiles on phones upright and small tablets upright', () => {

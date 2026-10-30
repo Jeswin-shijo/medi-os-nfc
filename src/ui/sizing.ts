@@ -81,21 +81,28 @@ const FACT_CHAR_EM = 0.56;
 /** A long value shrinks no further than this before it takes a row of its own. */
 export const FACT_MIN_FONT = 16;
 
+/** The stacked card's details padding on a phone upright (spacing.md). */
+const COMPACT_DETAILS_PADDING = 16;
+
 /**
- * How one fact's value fits when the facts sit two to a row: as it is, a little smaller so it is never
- * cut off (the last visit's date and time on a phone on its side), or alone on its row at the column's
- * size when even 16 sp would cut it off. One to a row already: the full row, nothing to change.
+ * How one fact's value fits its row so it is never cut off. Two to a row: as it is, a little smaller (the
+ * last visit's date and time on a phone on its side), or alone on its row at the column's size when even
+ * 16 sp would cut it off. One to a row: as it is, or a little smaller where the row is narrower than the
+ * value (a small tablet upright, 640 dp, cut "26 Sep 2026 11:30 AM" at 26 sp).
  */
 export function factFit(l: Layout, value: string, insetX = 0): { fullRow: boolean; fontSize: number | null } {
   const { twoColumns, valueFont } = patientFacts(l, insetX);
-  if (!twoColumns) return { fullRow: true, fontSize: null };
-  const half = Math.floor(patientDetailsWidth(l, insetX) / 2) - FACT_GAP;
-  const size = valueFont?.fontSize ?? FACT_FONT;
+  const compact = l.size === 'compact';
+  // The value sizes Patient uses: the two-to-a-row size, a phone's size, or the screen's own.
+  const size = valueFont?.fontSize ?? (compact ? l.type.subtitle + 2 : FACT_FONT);
+  const details = compact ? patientContentWidth(l, insetX) - 2 * COMPACT_DETAILS_PADDING : patientDetailsWidth(l, insetX);
+  const room = (twoColumns ? Math.floor(details / 2) : details) - FACT_GAP;
   const widthAt = (font: number) => value.length * font * FACT_CHAR_EM;
-  if (widthAt(size) <= half) return { fullRow: false, fontSize: null };
-  const shrunk = Math.floor(half / (value.length * FACT_CHAR_EM));
-  if (shrunk >= FACT_MIN_FONT) return { fullRow: false, fontSize: Math.min(size - 1, shrunk) };
-  return { fullRow: true, fontSize: null };
+  if (widthAt(size) <= room) return { fullRow: !twoColumns, fontSize: null };
+  const shrunk = Math.floor(room / (value.length * FACT_CHAR_EM));
+  if (shrunk >= FACT_MIN_FONT) return { fullRow: !twoColumns, fontSize: Math.min(size - 1, shrunk) };
+  // Too long even at 16 sp: two to a row gives it the row; one to a row, the smallest size (the rest ellipsised).
+  return twoColumns ? { fullRow: true, fontSize: null } : { fullRow: true, fontSize: FACT_MIN_FONT };
 }
 
 /** Expanded windows lower than this (a small tablet on its side) use the touch minimum for number keys. */
