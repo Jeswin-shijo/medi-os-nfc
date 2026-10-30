@@ -5,8 +5,17 @@ import { useKioskApp } from '../store/useKioskApp';
 import { staffSecondsLeft, staffSessionExpired } from './session';
 import { useStaffSession } from './useStaffSession';
 
+/**
+ * True from Exit staff mode until someone signs in again: the screens still on the way out lose their
+ * session as they go, and must not send the kiosk to staff sign-in (it stayed there for the rest of the
+ * two minutes when staff left from Kiosk setup). Not cleared when a staff screen
+ * opens: the menu turns into the sign-in form (a new frame) during the exit itself.
+ */
+let exiting = false;
+
 /** Signs out and goes back to the patient screen. */
 export function leaveStaffMode(): void {
+  exiting = true;
   useStaffSession.getState().end();
   // A kiosk whose key was removed has no patient screens: back to its "removed" screen.
   router.dismissTo(useKioskApp.getState().status === 'unconfigured' ? '/setup' : '/');
@@ -41,7 +50,8 @@ export function useStaffGuard(requireSession: boolean): number {
   }, []);
 
   useEffect(() => {
-    if (requireSession && !token && !leaving.current) router.replace('/staff');
+    if (token) exiting = false;
+    else if (requireSession && !leaving.current && !exiting) router.replace('/staff');
   }, [requireSession, token]);
 
   return seconds;
