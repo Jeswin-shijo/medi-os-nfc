@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Redirect, router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInLeft, ReduceMotion, useReducedMotion, ZoomIn } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFlow } from '../flow/useFlow';
 import { strings } from '../i18n/strings';
 import { easeOut } from '../motion/curves';
@@ -10,7 +11,7 @@ import { colors, fonts, motion, radii, shadows, spacing, typography } from '../t
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { Screen } from '../ui/Screen';
-import { contentWidth, fit, patientFacts } from '../ui/sizing';
+import { factFit, fit, patientContentWidth, patientFacts } from '../ui/sizing';
 import { StepTitle } from '../ui/StepTitle';
 import { useLayout } from '../ui/useLayout';
 
@@ -23,6 +24,7 @@ export default function PatientFound() {
   const appointment = useFlow((s) => s.appointmentToday);
   const reduced = useReducedMotion();
   const layout = useLayout();
+  const insets = useSafeAreaInsets();
 
   if (!patient) return <Redirect href="/" />;
 
@@ -49,11 +51,14 @@ export default function PatientFound() {
 
   const compact = layout.size === 'compact';
   const small = compact || layout.short;
-  const available = contentWidth(layout);
+  // The Screen pads the sides by the safe-area insets too (a phone's camera cutout on its side).
+  const insetX = insets.left + insets.right;
+  const available = patientContentWidth(layout, insetX);
   // A phone upright stacks the identity above the facts, and the actions go full width with Continue first.
   const identityWidth = fit(400, Math.round(available * 0.4));
   // Two facts to a row only where both fit (in smaller type on a medium column); otherwise one per row, never cut short.
-  const { twoColumns, valueFont } = patientFacts(layout);
+  // A value too long for its half row shrinks a little, or takes the row alone (the last visit's date and time).
+  const { valueFont } = patientFacts(layout, insetX);
   const factSize = valueFont ?? (compact ? { fontSize: layout.type.subtitle + 2, lineHeight: 26 } : null);
 
   return (
@@ -81,14 +86,17 @@ export default function PatientFound() {
 
         <View style={[styles.details, small && styles.detailsSmall]}>
           <View style={styles.facts}>
-            {facts.map((fact, i) => (
-              <Enter key={fact.label} index={i} delay={DETAILS_DELAY_MS} style={[styles.fact, !twoColumns && styles.factFull]}>
-                <Text style={styles.factLabel}>{fact.label}</Text>
-                <Text style={[styles.factValue, factSize]} numberOfLines={1}>
-                  {fact.value}
-                </Text>
-              </Enter>
-            ))}
+            {facts.map((fact, i) => {
+              const fitted = factFit(layout, fact.value, insetX);
+              return (
+                <Enter key={fact.label} index={i} delay={DETAILS_DELAY_MS} style={[styles.fact, fitted.fullRow && styles.factFull]}>
+                  <Text style={styles.factLabel}>{fact.label}</Text>
+                  <Text style={[styles.factValue, factSize, fitted.fontSize ? { fontSize: fitted.fontSize } : null]} numberOfLines={1}>
+                    {fact.value}
+                  </Text>
+                </Enter>
+              );
+            })}
           </View>
           {appointment ? (
             <Enter index={facts.length} delay={DETAILS_DELAY_MS} style={[styles.appointment, compact && styles.appointmentCompact]}>

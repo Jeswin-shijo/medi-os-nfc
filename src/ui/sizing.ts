@@ -54,15 +54,48 @@ export interface PatientFacts {
  * scarce) keeps two to a row in smaller type so Continue stays in sight; narrow ones list one per row.
  * A phone upright stacks the card and lists the facts one per row.
  */
-export function patientFacts(l: Layout): PatientFacts {
+export function patientFacts(l: Layout, insetX = 0): PatientFacts {
   if (l.size === 'compact') return { twoColumns: false, valueFont: null };
-  const available = contentWidth(l);
-  const identity = fit(400, Math.round(available * 0.4));
-  const padding = l.short ? 16 : 40;
-  const details = available - identity - 1 - 2 * padding;
+  const details = patientDetailsWidth(l, insetX);
   if (details >= PATIENT_FACTS_TWO_MIN) return { twoColumns: true, valueFont: null };
   if (details >= PATIENT_FACTS_TWO_SMALL_MIN) return { twoColumns: true, valueFont: { fontSize: 20, lineHeight: 26 } };
   return { twoColumns: false, valueFont: null };
+}
+
+/** The patient card's content width, less the safe-area insets at the sides (a phone's camera cutout on its side). */
+export const patientContentWidth = (l: Layout, insetX = 0) => Math.max(0, contentWidth(l) - insetX);
+
+function patientDetailsWidth(l: Layout, insetX: number): number {
+  const available = patientContentWidth(l, insetX);
+  const identity = fit(400, Math.round(available * 0.4));
+  const padding = l.short ? 16 : 40;
+  return available - identity - 1 - 2 * padding;
+}
+
+/** The fact value's size on the screen (typography.headline), when the layout keeps it. */
+const FACT_FONT = 26;
+/** Space after a fact in a half row (its right padding, spacing.lg). */
+const FACT_GAP = 24;
+/** IBM Plex Sans Medium advances about 0.53 em a character ("26 Sep 2026 08:20 AM" is 210 dp at 20 sp); a little more for safety. */
+const FACT_CHAR_EM = 0.56;
+/** A long value shrinks no further than this before it takes a row of its own. */
+export const FACT_MIN_FONT = 16;
+
+/**
+ * How one fact's value fits when the facts sit two to a row: as it is, a little smaller so it is never
+ * cut off (the last visit's date and time on a phone on its side), or alone on its row at the column's
+ * size when even 16 sp would cut it off. One to a row already: the full row, nothing to change.
+ */
+export function factFit(l: Layout, value: string, insetX = 0): { fullRow: boolean; fontSize: number | null } {
+  const { twoColumns, valueFont } = patientFacts(l, insetX);
+  if (!twoColumns) return { fullRow: true, fontSize: null };
+  const half = Math.floor(patientDetailsWidth(l, insetX) / 2) - FACT_GAP;
+  const size = valueFont?.fontSize ?? FACT_FONT;
+  const widthAt = (font: number) => value.length * font * FACT_CHAR_EM;
+  if (widthAt(size) <= half) return { fullRow: false, fontSize: null };
+  const shrunk = Math.floor(half / (value.length * FACT_CHAR_EM));
+  if (shrunk >= FACT_MIN_FONT) return { fullRow: false, fontSize: Math.min(size - 1, shrunk) };
+  return { fullRow: true, fontSize: null };
 }
 
 /** Expanded windows lower than this (a small tablet on its side) use the touch minimum for number keys. */

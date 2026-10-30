@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { layoutFor } from './layout';
-import { contentWidth, entryRowWidth, fit, keyHeight, otpMetrics, padWidth, patientFacts, phoneMetrics, sideBySide, welcomeStacked, welcomeTilesDense } from './sizing';
+import { contentWidth, entryRowWidth, factFit, fit, keyHeight, otpMetrics, padWidth, patientFacts, phoneMetrics, sideBySide, welcomeStacked, welcomeTilesDense } from './sizing';
 
 test('fit keeps the tablet size where there is room and shrinks where there is not', () => {
   assert.equal(fit(460, 1200), 460);
@@ -89,6 +89,29 @@ test('patient facts sit two to a row where they fit, in smaller type on medium c
   assert.deepEqual(patientFacts(layoutFor(640, 1024)), { twoColumns: false, valueFont: null });
   // A phone upright stacks the card; its facts are one per row already.
   assert.equal(patientFacts(layoutFor(427, 952)).twoColumns, false);
+});
+
+test('a long fact two to a row shrinks rather than being cut off, and takes a row alone if it still does not fit', () => {
+  const lastVisit = '26 Sep 2026 08:20 AM';
+  // The tablet's half row has room at full size.
+  assert.deepEqual(factFit(layoutFor(1280, 800), lastVisit), { fullRow: false, fontSize: null });
+  // A phone on its side with a camera cutout (48 dp of insets): the date and time were cut off at 20 sp
+  // ("26 Sep 2026 08:20 ..."). They shrink a little instead, keeping two to a row so Continue stays in sight.
+  const sideways = factFit(layoutFor(952, 427), lastVisit, 48);
+  assert.equal(sideways.fullRow, false);
+  assert.ok(sideways.fontSize !== null && sideways.fontSize >= 16 && sideways.fontSize < 20, String(sideways.fontSize));
+  // Without the cutout the half row is wider: never a smaller size than with it.
+  const noCutout = factFit(layoutFor(952, 427), lastVisit);
+  assert.ok(noCutout.fontSize === null || noCutout.fontSize >= (sideways.fontSize ?? 0));
+  // Short values keep the column's size.
+  assert.deepEqual(factFit(layoutFor(952, 427), '••••• 56789', 48), { fullRow: false, fontSize: null });
+  // Too long even at 16 sp: a row of its own, at the column's size.
+  assert.deepEqual(factFit(layoutFor(952, 427), 'Obstetrics & Gynaecology, Ward 3 follow-up', 48), { fullRow: true, fontSize: null });
+  // A long department on a small tablet on its side shrinks too.
+  assert.ok((factFit(layoutFor(1024, 640), 'Obstetrics & Gynaecology').fontSize ?? 20) < 20);
+  // One to a row already (tablets upright, phones upright): nothing to fit.
+  assert.deepEqual(factFit(layoutFor(800, 1280), lastVisit), { fullRow: true, fontSize: null });
+  assert.deepEqual(factFit(layoutFor(427, 952), lastVisit), { fullRow: true, fontSize: null });
 });
 
 test('Welcome stacks its tiles on phones upright and small tablets upright', () => {
