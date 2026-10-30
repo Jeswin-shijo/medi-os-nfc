@@ -13,6 +13,17 @@ npm run lint
 
 New packages: `npx expo install <package> -- --legacy-peer-deps`. Never edit `android/` by hand: it is generated (`npx expo prebuild`) and git-ignored. Native settings live in `app.json` and the config plugins.
 
+## Logo and icons
+
+The MediOS Reception mark is the MediOS cross with three contactless waves from its right arm. The drawing lives in `src/theme/brandLogo.ts` (pure data, with a heavier two-wave variant under 32 dp). The header uses it through `src/ui/BrandMark.tsx`. The app icon, adaptive icon layers, themed (monochrome) icon, splash, favicon and `assets/logo.png` are generated from the same drawing:
+
+```bash
+node scripts/generate-icons.js      # rewrites assets/*.png; needs Google Chrome (or CHROME_PATH)
+npx expo prebuild -p android --clean --no-install && npx expo run:android   # a native rebuild shows the new launcher icon and splash
+```
+
+Splash and icon settings are in `app.json` (`icon`, `android.adaptiveIcon`, the `expo-splash-screen` plugin). `assets/splash-icon-on-light.png` is a spare for a white splash.
+
 ## Running against the test API
 
 1. Start MongoDB (`docker start medios-mongodb`) and the backend from the reception worktree:

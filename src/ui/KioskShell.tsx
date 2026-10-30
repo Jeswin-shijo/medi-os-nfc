@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInUp, FadeOut, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Rect } from 'react-native-svg';
 import type { KioskConfig } from '../api/types';
 import { isUnder, stepForRoute } from '../flow/steps';
 import { useFlow } from '../flow/useFlow';
@@ -16,6 +15,7 @@ import { PressableScale } from '../motion/Pressable';
 import { clinicClock, formatHeaderTime } from '../lib/time';
 import { useKioskApp } from '../store/useKioskApp';
 import { colors, fonts, headerGradient, headerSubtle, motion, radii, spacing, typography } from '../theme/tokens';
+import { BrandMark } from './BrandMark';
 import { Stepper } from './Stepper';
 import { headerTimeOnly } from './layout';
 import { useLayout } from './useLayout';
@@ -111,15 +111,11 @@ export function KioskShell({ children }: { children: ReactNode }) {
   );
 }
 
-/** The hospital mark: a rounded white tile with a blue cross. */
+/** The MediOS Reception mark (the cross with contactless waves) on a rounded white tile. */
 function LogoTile({ small }: { small: boolean }) {
-  const mark = small ? 26 : 34;
   return (
     <View style={[styles.logo, small && styles.logoSmall]}>
-      <Svg width={mark} height={mark} viewBox="0 0 34 34">
-        <Rect x={12} y={3} width={10} height={28} rx={3} fill={colors.primary} />
-        <Rect x={3} y={12} width={28} height={10} rx={3} fill={colors.primary} />
-      </Svg>
+      <BrandMark width={small ? 30 : 38} />
     </View>
   );
 }
