@@ -83,3 +83,11 @@ test('the OP number keeps 24 sp wherever its line fits, and steps down on the na
   assert.equal(ticketSizes(layoutFor(952, 427)).opFont, 24);
   assert.equal(ticketSizes(layoutFor(320, 640)).opFont, 20);
 });
+
+test('a phone on its side puts the token at the top of the slip, where it shows without scrolling', () => {
+  for (const [w, h] of [[952, 427], [915, 412], [844, 390]] as const) assert.equal(ticketSizes(layoutFor(w, h)).tokenFirst, true, `${w}x${h}`);
+  // Everywhere else the slip reads as before: OP number and time, then the token.
+  for (const [w, h] of [[427, 952], [390, 844], [1280, 800], [800, 1280], [1024, 640], [1920, 1200]] as const) {
+    assert.equal(ticketSizes(layoutFor(w, h)).tokenFirst, false, `${w}x${h}`);
+  }
+});

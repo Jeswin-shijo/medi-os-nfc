@@ -149,42 +149,49 @@ function TicketScreen({ visit, token }: { visit: VisitView; token: KioskTokenVie
   );
 }
 
-/** The digital ticket: OP number and time, the token, the queue, then the visit. */
+/** The digital ticket: OP number and time, the token, the queue, then the visit (the token first on a phone on its side). */
 function PaperTicket({ visit, token, sizes }: { visit: VisitView; token: KioskTokenView; sizes: TicketSizes }) {
   const method = visit.method ? strings.paid.modes[visit.method] : undefined;
+  // Keyed: when the device turns the two swap places without remounting (the token would roll again).
+  const opAndTime = (
+    <View key="op" style={sizes.topRow ? styles.paperTop : styles.paperTopStacked}>
+      <View style={sizes.topRow ? styles.topCell : undefined}>
+        <Text style={styles.caption}>{strings.ticket.opNumber}</Text>
+        {/* Never cut short: on the narrowest phones a smaller size (not adjustsFontSizeToFit, which stayed tiny after a rotation). */}
+        <Text style={[styles.opNumber, { fontSize: sizes.opFont, lineHeight: sizes.opFont + 6 }]} numberOfLines={1}>
+          {visit.opNumber ?? ''}
+        </Text>
+      </View>
+      {visit.paidAtDisplay ? (
+        <View style={sizes.topRow ? [styles.topCell, styles.topCellEnd] : undefined}>
+          <Text style={styles.caption}>{strings.ticket.when}</Text>
+          <Text style={styles.when} numberOfLines={1}>
+            {visit.paidAtDisplay}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+  const tokenZone = (
+    <View key="token" style={styles.tokenZone} accessible accessibilityLabel={`${strings.ticket.yourToken} ${token.label}`}>
+      <Text style={styles.tokenCaption} importantForAccessibility="no">
+        {strings.ticket.yourToken}
+      </Text>
+      <RollingNumber value={token.label} style={[styles.token, sizes.token]} delay={ROLL_DELAY_MS} />
+      <View style={styles.ahead}>
+        <MaterialCommunityIcons name="account-group-outline" size={24} color={colors.primaryDark} />
+        <Text style={styles.aheadText}>{strings.hasToken.ahead(token.ahead)}</Text>
+      </View>
+    </View>
+  );
   return (
     <View style={styles.paper}>
       <View style={[styles.paperBody, { paddingHorizontal: sizes.paperPadX, paddingTop: sizes.paperPadTop }]}>
-        <View style={sizes.topRow ? styles.paperTop : styles.paperTopStacked}>
-          <View style={sizes.topRow ? styles.topCell : undefined}>
-            <Text style={styles.caption}>{strings.ticket.opNumber}</Text>
-            {/* Never cut short: on the narrowest phones a smaller size (not adjustsFontSizeToFit, which stayed tiny after a rotation). */}
-            <Text style={[styles.opNumber, { fontSize: sizes.opFont, lineHeight: sizes.opFont + 6 }]} numberOfLines={1}>
-              {visit.opNumber ?? ''}
-            </Text>
-          </View>
-          {visit.paidAtDisplay ? (
-            <View style={sizes.topRow ? [styles.topCell, styles.topCellEnd] : undefined}>
-              <Text style={styles.caption}>{strings.ticket.when}</Text>
-              <Text style={styles.when} numberOfLines={1}>
-                {visit.paidAtDisplay}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+        {sizes.tokenFirst ? tokenZone : opAndTime}
 
         <Perforation bleed={sizes.paperPadX} />
 
-        <View style={styles.tokenZone} accessible accessibilityLabel={`${strings.ticket.yourToken} ${token.label}`}>
-          <Text style={styles.tokenCaption} importantForAccessibility="no">
-            {strings.ticket.yourToken}
-          </Text>
-          <RollingNumber value={token.label} style={[styles.token, sizes.token]} delay={ROLL_DELAY_MS} />
-          <View style={styles.ahead}>
-            <MaterialCommunityIcons name="account-group-outline" size={24} color={colors.primaryDark} />
-            <Text style={styles.aheadText}>{strings.hasToken.ahead(token.ahead)}</Text>
-          </View>
-        </View>
+        {sizes.tokenFirst ? opAndTime : tokenZone}
 
         <Perforation bleed={sizes.paperPadX} />
 

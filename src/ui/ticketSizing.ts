@@ -42,6 +42,8 @@ export interface TicketSizes {
   topRow: boolean;
   /** Font size of the OP number. */
   opFont: number;
+  /** The token heads the slip, above the OP number and time: on a phone on its side it was cut at the bottom of the window. */
+  tokenFirst: boolean;
 }
 
 /** Slip first, then the side column: phones upright and small tablets upright (medium and taller than wide). */
@@ -79,5 +81,6 @@ export function ticketSizes(l: Layout): TicketSizes {
     factsTwoColumns: innerWidth >= FACTS_TWO_COLUMNS_MIN,
     topRow: innerWidth >= TOP_ROW_MIN,
     opFont: innerWidth >= OP_FULL_MIN ? 24 : 20,
+    tokenFirst: l.short,
   };
 }
